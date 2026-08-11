@@ -78,6 +78,16 @@ RUN chown -R www-data:www-data \
     /var/www/html/storage \
     /var/www/html/bootstrap/cache
 
+RUN mkdir -p \
+    /var/www/html/storage/framework/cache \
+    /var/www/html/storage/framework/sessions \
+    /var/www/html/storage/framework/views \
+    /var/www/html/bootstrap/cache
+
+RUN chown -R www-data:www-data \
+    /var/www/html/storage \
+    /var/www/html/bootstrap/cache
+
 RUN chmod -R 775 \
     /var/www/html/storage \
     /var/www/html/bootstrap/cache

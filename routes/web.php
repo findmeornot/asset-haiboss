@@ -2,9 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+
 
 Route::get('/asset/{id}/print-label', function ($id) {
     abort_unless(auth()->check(), 403);

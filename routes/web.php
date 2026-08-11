@@ -24,3 +24,15 @@ Route::get('/movement/{id}/berita-acara', function ($id, BeritaAcaraService $baS
 Route::get('/report/export', [ReportController::class, 'exportExcel'])
     ->name('report.export.excel')
     ->middleware('auth');
+
+Route::get('/debug-session', function (Request $request) {
+    return response()->json([
+        'scheme' => $request->getScheme(),
+        'secure' => $request->isSecure(),
+        'host' => $request->getHost(),
+        'url' => $request->fullUrl(),
+        'session_id' => $request->session()->getId(),
+        'csrf_token' => $request->session()->token(),
+        'session_cookie' => config('session.cookie'),
+    ]);
+});

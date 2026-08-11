@@ -1,0 +1,48 @@
+module.exports = {
+  apps: [
+    {
+      name: "laravel-scheduler",
+      script: "artisan",
+      args: "schedule:work",
+      cwd: "/app",
+      interpreter: "php",
+      watch: false,
+      autorestart: true,
+      max_restarts: 5,
+      restart_delay: 5000,
+      out_file: '/app/pm2-logs/laravel-scheduler-out.log',
+      error_file: '/app/pm2-logs/laravel-scheduler-error.log',
+      merge_logs: true,
+    },
+
+    // {
+    //   name: "laravel-queue-worker",
+    //   script: "artisan",
+    //   args: "queue:work --sleep=1 --tries=3 --timeout=60",
+    //   cwd: "/app",
+    //   interpreter: "php",
+    //   watch: false,
+    //   autorestart: true,
+    //   max_restarts: 5,
+    //   restart_delay: 5000,
+    //   out_file: '/app/pm2-logs/laravel-queue-worker-out.log',
+    //   error_file: '/app/pm2-logs/laravel-queue-worker-error.log',
+    //   merge_logs: true,
+    // },
+
+    {
+      name: "laravel-queue-worker-job",
+      script: "artisan",
+      args: "queue:work --queue=send-post --sleep=1 --tries=3 --timeout=60",
+      cwd: "/app",
+      interpreter: "php",
+      watch: false,
+      autorestart: true,
+      max_restarts: 5,
+      restart_delay: 5000,
+      out_file: '/app/pm2-logs/laravel-queue-worker-out.log',
+      error_file: '/app/pm2-logs/laravel-queue-worker-error.log',
+      merge_logs: true,
+    },
+  ],
+};

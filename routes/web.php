@@ -36,3 +36,10 @@ Route::get('/debug-session', function (Request $request) {
         'session_cookie' => config('session.cookie'),
     ]);
 });
+
+Route::post('/debug-post', function (\Illuminate\Http\Request $request) {
+    return response()->json([
+        'ok' => true,
+        'session' => $request->session()->all(),
+    ]);
+});

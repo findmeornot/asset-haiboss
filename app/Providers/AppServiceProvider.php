@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 use App\Models\Asset;
 use App\Observers\AssetObserver;
 
@@ -21,10 +22,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (app()->environment('production')) {
-            \Illuminate\Support\Facades\URL::forceScheme('https');
+         if (!app()->environment('local')) {
+            URL::forceScheme('https');
         }
-        
-        Asset::observe(AssetObserver::class);
     }
 }

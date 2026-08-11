@@ -8,6 +8,10 @@ use App\Models\AssetMovement;
 use App\Services\BeritaAcaraService;
 use App\Http\Controllers\ReportController;
 
+Route::get('/', function () {
+    return redirect()->route('admin.login')->with('success', 'Selamat datang di Aplikasi Asset Management!');
+});
+
 Route::get('/asset/{id}/print-label', function ($id) {
     abort_unless(Auth::check(), 403);
     $asset = Asset::findOrFail($id);

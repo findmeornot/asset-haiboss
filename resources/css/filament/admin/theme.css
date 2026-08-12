@@ -1,0 +1,35 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../../resources/views/vendor/filament-panels/**/*';
+
+/* Sidebar Vertical Border Line on Right */
+aside.fi-sidebar,
+.fi-sidebar {
+    border-right: 1px solid #e5e7eb !important;
+}
+
+:is(.dark aside.fi-sidebar),
+:is(.dark .fi-sidebar) {
+    border-right: 1px solid #1f2937 !important;
+}
+
+/* Tombol default: ring cuma 10% opacity & icon abu-abu terang -> pudar di bg putih. Perkuat kontrasnya. */
+.fi-btn:not(.fi-outlined):not(.fi-color) {
+    --tw-ring-color: var(--gray-400) !important;
+}
+
+:is(.dark .fi-btn:not(.fi-outlined):not(.fi-color)) {
+    --tw-ring-color: var(--gray-600) !important;
+}
+
+.fi-btn:not(.fi-outlined):not(.fi-color) > .fi-icon {
+    color: var(--gray-600) !important;
+}
+
+:is(.dark .fi-btn:not(.fi-outlined):not(.fi-color) > .fi-icon) {
+    color: var(--gray-300) !important;
+}

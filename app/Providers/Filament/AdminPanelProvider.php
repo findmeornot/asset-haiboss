@@ -10,6 +10,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -27,10 +28,29 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->passwordReset(\App\Filament\Pages\Auth\CustomRequestPasswordReset::class)
+            ->brandLogo(asset('logo.png'))
+            ->brandLogoHeight('2.5rem')
+            ->favicon(asset('favicon.png'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Blue,
             ])
+            ->sidebarWidth('15rem')
+            ->maxContentWidth(Width::Full)
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn () => view('filament.components.header-tools')
+            )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::SIDEBAR_NAV_START,
+                fn () => view('filament.components.sidebar-header-subtitle')
+            )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
+                fn () => view('filament.components.sidebar-footer-user')
+            )
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

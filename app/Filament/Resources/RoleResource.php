@@ -84,7 +84,7 @@ class RoleResource extends Resource
     public static function permissionChecklistSchema(): array
     {
         return static::permissionGroups()
-            ->except('panel')
+            ->reject(fn (Collection $permissions, string $group): bool => $group === 'panel')
             ->map(function (Collection $permissions, string $group) {
                 $label = Str::headline($group);
 

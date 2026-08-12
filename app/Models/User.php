@@ -66,28 +66,18 @@ class User extends Authenticatable implements FilamentUser
     }
 
     public const PANEL_PERMISSIONS = [
-        'inventory' => ['assets.view', 'movements.view', 'stock_opname.view', 'reports.view', 'asset_scanner.use'],
+        'admin' => 'panel.admin',
+        'inventory' => 'panel.inventory',
     ];
-
-    public function hasAnyPermissionTo(array $permissions): bool
-    {
-        foreach ($permissions as $permission) {
-            if ($this->hasPermissionTo($permission)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     public function canAccessPanel(Panel $panel): bool
     {
-        $permissions = self::PANEL_PERMISSIONS[$panel->getId()] ?? null;
+        $permission = self::PANEL_PERMISSIONS[$panel->getId()] ?? null;
 
-        if ($permissions === null) {
-            return true;
+        if ($permission === null) {
+            return false;
         }
 
-        return $this->hasAnyPermissionTo($permissions);
+        return $this->hasPermissionTo($permission);
     }
 }

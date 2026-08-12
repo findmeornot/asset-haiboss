@@ -285,7 +285,7 @@
                 <p class="so-subtitle">Pemeriksaan Aset &middot; {{ $opname->name }}</p>
             </div>
             <div>
-                <x-filament::button tag="a" href="{{ \App\Filament\Resources\StockOpnameResource::getUrl('index') }}" color="gray">
+                <x-filament::button tag="a" href="{{ \App\Filament\Inventory\Resources\StockOpnameResource::getUrl('index') }}" color="gray">
                     &larr; Kembali
                 </x-filament::button>
             </div>

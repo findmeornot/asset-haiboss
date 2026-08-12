@@ -1,7 +1,7 @@
 <?php
-namespace App\Filament\Resources;
+namespace App\Filament\Inventory\Resources;
 
-use App\Filament\Resources\AssetMovementResource\Pages;
+use App\Filament\Inventory\Resources\AssetMovementResource\Pages;
 use App\Models\AssetMovement;
 use App\Models\Asset;
 use Filament\Schemas\Schema;

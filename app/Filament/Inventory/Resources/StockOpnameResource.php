@@ -1,7 +1,7 @@
 <?php
-namespace App\Filament\Resources;
+namespace App\Filament\Inventory\Resources;
 
-use App\Filament\Resources\StockOpnameResource\Pages;
+use App\Filament\Inventory\Resources\StockOpnameResource\Pages;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
 use App\Models\Asset;
@@ -145,7 +145,7 @@ class StockOpnameResource extends Resource
                     ->icon('heroicon-o-bars-4')
                     ->color('primary')
                     ->visible(fn (StockOpname $record) => $record->status === 'in_progress')
-                    ->url(fn (StockOpname $record) => route('filament.admin.pages.stock-opname-scanner', ['opname' => $record->id])),
+                    ->url(fn (StockOpname $record) => route('filament.inventory.pages.stock-opname-scanner', ['opname' => $record->id])),
                 \Filament\Actions\Action::make('complete')
                     ->label('Selesaikan')
                     ->icon('heroicon-o-check-circle')

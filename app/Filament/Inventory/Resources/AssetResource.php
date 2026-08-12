@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Inventory\Resources;
 
-use App\Filament\Resources\AssetResource\Pages;
+use App\Filament\Inventory\Resources\AssetResource\Pages;
 use App\Models\Asset;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components;

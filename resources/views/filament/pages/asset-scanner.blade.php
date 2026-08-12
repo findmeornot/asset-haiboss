@@ -348,7 +348,7 @@
                         <!-- TOMBOL AKSI UTAMA -->
                         <x-filament::button
                             tag="a"
-                            href="{{ \App\Filament\Resources\AssetResource::getUrl('view', ['record' => $scannedAsset]) }}"
+                            href="{{ \App\Filament\Inventory\Resources\AssetResource::getUrl('view', ['record' => $scannedAsset]) }}"
                             color="primary"
                             size="lg"
                             class="w-full justify-center font-bold"

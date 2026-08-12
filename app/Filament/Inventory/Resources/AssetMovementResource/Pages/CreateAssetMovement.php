@@ -1,6 +1,6 @@
 <?php
-namespace App\Filament\Resources\AssetMovementResource\Pages;
-use App\Filament\Resources\AssetMovementResource;
+namespace App\Filament\Inventory\Resources\AssetMovementResource\Pages;
+use App\Filament\Inventory\Resources\AssetMovementResource;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
 class CreateAssetMovement extends CreateRecord

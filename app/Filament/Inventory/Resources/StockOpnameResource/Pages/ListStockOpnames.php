@@ -1,6 +1,6 @@
 <?php
-namespace App\Filament\Resources\StockOpnameResource\Pages;
-use App\Filament\Resources\StockOpnameResource;
+namespace App\Filament\Inventory\Resources\StockOpnameResource\Pages;
+use App\Filament\Inventory\Resources\StockOpnameResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 class ListStockOpnames extends ListRecords

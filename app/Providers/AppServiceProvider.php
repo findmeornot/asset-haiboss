@@ -5,7 +5,9 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use App\Models\Asset;
+use App\Models\User;
 use App\Observers\AssetObserver;
+use BezhanSalleh\PanelSwitch\PanelSwitch;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,5 +27,33 @@ class AppServiceProvider extends ServiceProvider
          if (!app()->environment('local')) {
             URL::forceScheme('https');
         }
+
+        PanelSwitch::configureUsing(function (PanelSwitch $panelSwitch) {
+            $panelSwitch
+                ->simple()
+                ->iconSize(18)
+                ->modalHeading('Pilih Panel')
+                ->labels([
+                    'admin' => 'Admin',
+                    'inventory' => 'Inventory',
+                ])
+                ->icons([
+                    'admin' => 'heroicon-o-shield-check',
+                    'inventory' => 'heroicon-o-archive-box',
+                ])
+                ->panels(function (): array {
+                    /** @var User|null $user */
+                    $user = auth()->user();
+
+                    if (! $user) {
+                        return [];
+                    }
+
+                    return collect([
+                        'admin' => true,
+                        'inventory' => $user->hasAnyPermissionTo(User::PANEL_PERMISSIONS['inventory']),
+                    ])->filter()->keys()->values()->all();
+                });
+        });
     }
 }

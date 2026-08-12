@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\AssetResource\Pages;
+namespace App\Filament\Inventory\Resources\AssetResource\Pages;
 
-use App\Filament\Resources\AssetResource;
+use App\Filament\Inventory\Resources\AssetResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use App\Models\AssetPriceHistory;

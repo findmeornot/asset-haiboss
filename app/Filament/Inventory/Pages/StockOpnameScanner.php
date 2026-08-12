@@ -1,5 +1,5 @@
 <?php
-namespace App\Filament\Pages;
+namespace App\Filament\Inventory\Pages;
 
 use App\Models\Asset;
 use App\Models\StockOpname;

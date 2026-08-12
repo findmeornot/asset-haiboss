@@ -30,9 +30,7 @@ class AppServiceProvider extends ServiceProvider
 
         PanelSwitch::configureUsing(function (PanelSwitch $panelSwitch) {
             $panelSwitch
-                ->simple()
-                ->iconSize(18)
-                ->modalHeading('Pilih Panel')
+                ->renderHook('panel-switch::disabled')
                 ->labels([
                     'admin' => 'Admin',
                     'inventory' => 'Inventory',

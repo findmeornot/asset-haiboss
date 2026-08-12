@@ -33,7 +33,7 @@ class InventoryPanelProvider extends PanelProvider
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('favicon.png'))
             ->colors([
-                'primary' => Color::Emerald,
+                'primary' => Color::Blue,
             ])
             ->sidebarWidth('15rem')
             ->maxContentWidth(Width::Full)

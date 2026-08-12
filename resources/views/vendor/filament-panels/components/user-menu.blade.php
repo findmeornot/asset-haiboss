@@ -3,9 +3,16 @@
 ])
 
 @php
+    use BezhanSalleh\PanelSwitch\PanelSwitch;
     use Filament\Actions\Action;
     use Filament\Enums\UserMenuPosition;
     use Illuminate\Support\Arr;
+
+    $panelSwitch = PanelSwitch::make();
+    $panelSwitchPanels = $panelSwitch->getPanels();
+    $panelSwitchCurrentPanel = $panelSwitch->getCurrentPanel();
+    $panelSwitchLabels = $panelSwitch->getLabels();
+    $panelSwitchIcons = $panelSwitch->getIcons();
 
     $user = filament()->auth()->user();
 
@@ -133,6 +140,37 @@
     @if (filament()->hasDarkMode() && (! filament()->hasDarkModeForced()) && filament()->hasThemeSwitcher())
         <x-filament::dropdown.list>
             <x-filament-panels::theme-switcher />
+        </x-filament::dropdown.list>
+    @endif
+
+    @if ($panelSwitch->isVisible())
+        <x-filament::dropdown.list>
+            @foreach ($panelSwitchPanels as $id => $url)
+                @php
+                    $isCurrentPanel = $id === $panelSwitchCurrentPanel->getId();
+                    $panelLabel = $panelSwitchLabels[$id] ?? str($id)->ucfirst();
+                    $panelIcon = $panelSwitchIcons[$id] ?? 'heroicon-o-square-2-stack';
+                @endphp
+
+                @if ($isCurrentPanel)
+                    <x-filament::dropdown.list.item
+                        :icon="$panelIcon"
+                        icon-color="primary"
+                        color="primary"
+                        tag="div"
+                        class="pointer-events-none"
+                    >
+                        <span class="flex items-center justify-between gap-x-2 w-full">
+                            <span class="text-primary-600 dark:text-primary-400">{{ $panelLabel }}</span>
+                            <x-filament::icon icon="heroicon-m-check" class="h-4 w-4 text-primary-600 dark:text-primary-400" />
+                        </span>
+                    </x-filament::dropdown.list.item>
+                @else
+                    <x-filament::dropdown.list.item :href="$url" :icon="$panelIcon" tag="a">
+                        {{ $panelLabel }}
+                    </x-filament::dropdown.list.item>
+                @endif
+            @endforeach
         </x-filament::dropdown.list>
     @endif
 

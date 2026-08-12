@@ -49,14 +49,19 @@ class CategoryResource extends Resource
                             ->label('Kode Kategori')
                             ->unique(ignoreRecord: true)
                             ->maxLength(255),
-                        Components\Textarea::make('description')
-                            ->label('Deskripsi')
-                            ->columnSpanFull(),
+                        Components\Select::make('type')
+                            ->label('Tipe Kategori')
+                            ->options(\App\Models\Category::TYPES)
+                            ->default('asset')
+                            ->required(),
                         Components\TextInput::make('useful_life')
                             ->label('Masa Manfaat (Tahun)')
                             ->numeric()
                             ->default(0)
                             ->helperText('Digunakan untuk perhitungan penyusutan aset (Straight Line).'),
+                        Components\Textarea::make('description')
+                            ->label('Deskripsi')
+                            ->columnSpanFull(),
                         Components\Toggle::make('active')
                             ->label('Aktif')
                             ->default(true),
@@ -75,11 +80,24 @@ class CategoryResource extends Resource
                 Tables\Columns\TextColumn::make('code')
                     ->label('Kode')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Tipe')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => \App\Models\Category::TYPES[$state] ?? $state)
+                    ->color(fn (string $state): string => match ($state) {
+                        'asset'     => 'primary',
+                        'inventory' => 'warning',
+                        'supply'    => 'success',
+                        default     => 'gray',
+                    }),
                 Tables\Columns\IconColumn::make('active')
                     ->label('Aktif')
                     ->boolean(),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Tipe')
+                    ->options(\App\Models\Category::TYPES),
                 Tables\Filters\TernaryFilter::make('active')
                     ->label('Status Aktif')
             ])

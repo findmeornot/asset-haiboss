@@ -7,6 +7,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Category extends Model {
     use SoftDeletes;
     protected $guarded = [];
+
+    public const TYPES = [
+        'asset'     => 'Aset',
+        'inventory' => 'Inventoris',
+        'supply'    => 'Persediaan',
+    ];
+
+    public function scopeOfType($query, string $type)
+    {
+        return $query->where('type', $type);
+    }
+
     public function assets(): HasMany { return $this->hasMany(Asset::class); }
     public function classifications(): BelongsToMany { return $this->belongsToMany(Classification::class, 'category_classification'); }
 }

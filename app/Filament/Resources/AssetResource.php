@@ -53,9 +53,21 @@ class AssetResource extends Resource
                                 ->label('Nama Barang')
                                 ->required()
                                 ->maxLength(255),
+                            Components\Select::make('classification_id')
+                                ->label('Klasifikasi Barang')
+                                ->relationship('classification', 'name')
+                                ->required()
+                                ->live()
+                                ->afterStateUpdated(fn (callable $set) => $set('category_id', null)),
                             Components\Select::make('category_id')
-                                ->label('Kategori')
-                                ->relationship('category', 'name')
+                                ->label('Kategori Barang')
+                                ->relationship(
+                                    name: 'category',
+                                    titleAttribute: 'name',
+                                    modifyQueryUsing: fn (Builder $query, callable $get) => $get('classification_id')
+                                        ? $query->whereHas('classifications', fn ($q) => $q->whereKey($get('classification_id')))
+                                        : $query->whereRaw('1 = 0'),
+                                )
                                 ->searchable()
                                 ->preload()
                                 ->createOptionForm([
@@ -66,7 +78,23 @@ class AssetResource extends Resource
                                         ->label('Kode Kategori')
                                         ->unique('categories', 'code'),
                                 ])
-                                ->required(),
+                                ->createOptionUsing(function (array $data, callable $get) {
+                                    $category = \App\Models\Category::create($data);
+
+                                    if ($classificationId = $get('classification_id')) {
+                                        $category->classifications()->attach($classificationId);
+                                    }
+
+                                    return $category->getKey();
+                                })
+                                ->required()
+                                ->disabled(fn (callable $get) => blank($get('classification_id')))
+                                ->placeholder(fn (callable $get) => blank($get('classification_id'))
+                                    ? 'Pilih klasifikasi terlebih dahulu'
+                                    : 'Pilih kategori')
+                                ->helperText(fn (callable $get) => blank($get('classification_id'))
+                                    ? 'Pilih klasifikasi barang terlebih dahulu untuk membuka daftar kategori.'
+                                    : null),
                             Components\TextInput::make('serial_number')
                                 ->label('Nomor Seri')
                                 ->maxLength(255),
@@ -285,7 +313,6 @@ class AssetResource extends Resource
                     ->visible(fn () => Auth::user()->hasRole('superadmin')),
             ])
             ->actions([
-                \Filament\Actions\EditAction::make(),
                 \Filament\Actions\Action::make('printLabel')
                     ->label('Cetak Barcode')
                     ->icon('heroicon-o-bars-4')
@@ -382,25 +409,19 @@ class AssetResource extends Resource
                                 ->send();
                         }
                     }),
+                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\EditAction::make(),
                 \Filament\Actions\DeleteAction::make()
                     ->modalHeading('Hapus Aset (Soft Delete)')
-                    ->modalDescription('Aset akan dihapus dari daftar aktif, tetapi histori tetap tersimpan.')
-                    ->requiresConfirmation(),
-                \Filament\Actions\RestoreAction::make()
-                    ->visible(fn () => Auth::user()->hasRole('superadmin'))
-                    ->requiresConfirmation(),
-                \Filament\Actions\ForceDeleteAction::make()
-                    ->visible(fn () => Auth::user()->hasRole('superadmin'))
-                    ->requiresConfirmation(),
+                    ->modalDescription('Aset akan dihapus dari daftar aktif, tetapi histori tetap tersimpan.'),
+                \Filament\Actions\ForceDeleteAction::make(),
+                \Filament\Actions\RestoreAction::make(),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make()
-                        ->requiresConfirmation(),
-                    \Filament\Actions\RestoreBulkAction::make()
-                        ->visible(fn () => Auth::user()->hasRole('superadmin')),
-                    \Filament\Actions\ForceDeleteBulkAction::make()
-                        ->visible(fn () => Auth::user()->hasRole('superadmin')),
+                    \Filament\Actions\DeleteBulkAction::make(),
+                    \Filament\Actions\ForceDeleteBulkAction::make(),
+                    \Filament\Actions\RestoreBulkAction::make(),
                 ]),
             ])
             ->emptyStateHeading('Belum ada Barang/Aset')

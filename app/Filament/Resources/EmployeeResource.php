@@ -98,13 +98,11 @@ class EmployeeResource extends Resource
             ])
             ->actions([
                 \Filament\Actions\EditAction::make(),
-                \Filament\Actions\DeleteAction::make()
-                    ->requiresConfirmation(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make()
-                        ->requiresConfirmation(),
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->emptyStateHeading('Belum ada Employees')

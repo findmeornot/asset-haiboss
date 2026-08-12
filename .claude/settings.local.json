@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk grep *)",
+      "Bash(rtk git *)",
+      "Bash(rtk read *)",
+      "Bash(rtk php *)",
+      "Bash(php artisan *)",
+      "Bash(npm ls *)",
+      "Bash(command -v npx)",
+      "Bash(npm root *)",
+      "Bash(rtk ls *)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(node -e \"require.resolve\\('puppeteer'\\)\")",
+      "Bash(curl -sv http://127.0.0.1:8123/admin/login -o /dev/null)",
+      "Bash(pkill -f \"artisan serve\")",
+      "Bash(php -m)",
+      "Bash(php vendor/bin/phpunit --configuration=/tmp/claude-1000/-mnt-d-TOPLOKER-asset-haiboss/1c4ce8d5-f14e-4440-9dec-09628f6fe816/scratchpad/phpunit-verify.xml --filter=TmpAssetClassificationVerifyTest)",
+      "Bash(php vendor/bin/pest --configuration=/tmp/claude-1000/-mnt-d-TOPLOKER-asset-haiboss/1c4ce8d5-f14e-4440-9dec-09628f6fe816/scratchpad/phpunit-verify.xml --filter=TmpAssetClassificationVerifyTest)",
+      "Bash(php vendor/bin/pest --configuration=/tmp/claude-1000/-mnt-d-TOPLOKER-asset-haiboss/1c4ce8d5-f14e-4440-9dec-09628f6fe816/scratchpad/phpunit-verify.xml --filter=TmpDebugTest)"
+    ]
+  }
+}

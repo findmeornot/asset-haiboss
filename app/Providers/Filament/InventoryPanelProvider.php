@@ -35,6 +35,7 @@ class InventoryPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Blue,
             ])
+            ->databaseNotifications()
             ->sidebarWidth('15rem')
             ->maxContentWidth(Width::Full)
             ->renderHook(

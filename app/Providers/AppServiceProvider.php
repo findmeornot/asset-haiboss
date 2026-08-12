@@ -47,10 +47,11 @@ class AppServiceProvider extends ServiceProvider
                         return [];
                     }
 
-                    return collect([
-                        'admin' => true,
-                        'inventory' => $user->hasAnyPermissionTo(User::PANEL_PERMISSIONS['inventory']),
-                    ])->filter()->keys()->values()->all();
+                    return collect(User::PANEL_PERMISSIONS)
+                        ->filter(fn (string $permission) => $user->hasPermissionTo($permission))
+                        ->keys()
+                        ->values()
+                        ->all();
                 });
         });
     }

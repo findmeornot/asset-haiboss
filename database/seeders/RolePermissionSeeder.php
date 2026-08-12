@@ -38,6 +38,8 @@ class RolePermissionSeeder extends Seeder
             'users.view', 'users.create', 'users.update', 'users.delete',
             'roles.view', 'roles.create', 'roles.update', 'roles.delete',
             'permissions.view', 'permissions.manage',
+            // Panel Access
+            'panel.admin', 'panel.inventory',
         ];
 
         foreach ($permissions as $permission) {
@@ -49,6 +51,7 @@ class RolePermissionSeeder extends Seeder
             'Superadmin' => [], // Bypass via User model
             
             'Tim Inventaris' => [
+                'panel.admin', 'panel.inventory',
                 'assets.view', 'assets.create', 'assets.update',
                 'categories.view', 'categories.create', 'categories.update',
                 'campuses.view', 'campuses.create', 'campuses.update',
@@ -61,14 +64,16 @@ class RolePermissionSeeder extends Seeder
                 'reports.view', 'reports.export',
                 'audit.view',
             ],
-            
+
             'Finance' => [
+                'panel.inventory',
                 'assets.view',
                 'financial.view', 'financial.export',
                 'reports.view', 'reports.export',
             ],
-            
+
             'Approver' => [
+                'panel.admin', 'panel.inventory',
                 'assets.view',
                 'movements.view', 'movements.approve', 'movements.reject', 'movements.complete',
                 'status.view', 'status.approve',

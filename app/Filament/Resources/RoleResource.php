@@ -49,6 +49,17 @@ class RoleResource extends Resource
                     ])
                     ->columnSpanFull(),
 
+                \Filament\Schemas\Components\Section::make('Akses Panel')
+                    ->description('Tentukan panel mana yang bisa diakses oleh role ini.')
+                    ->schema([
+                        Components\CheckboxList::make(static::permissionGroupFieldName('panel'))
+                            ->hiddenLabel()
+                            ->options(static::permissionGroups()->get('panel', collect())->pluck('name', 'id')->all())
+                            ->columns(2)
+                            ->bulkToggleable(),
+                    ])
+                    ->columnSpanFull(),
+
                 \Filament\Schemas\Components\Section::make('Hak Akses (Permissions)')
                     ->description('Permission dikelompokkan per modul. Centang hak akses yang diberikan untuk role ini.')
                     ->schema(static::permissionChecklistSchema())
@@ -73,6 +84,7 @@ class RoleResource extends Resource
     public static function permissionChecklistSchema(): array
     {
         return static::permissionGroups()
+            ->except('panel')
             ->map(function (Collection $permissions, string $group) {
                 $label = Str::headline($group);
 

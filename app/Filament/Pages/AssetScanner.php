@@ -22,17 +22,27 @@ class AssetScanner extends Page
     protected string $view = 'filament.pages.asset-scanner';
     
     protected static ?string $title = 'Scanner Aset';
+    
+    protected ?string $subheading = 'Scan barcode untuk menemukan aset.';
 
     public static function shouldRegisterNavigation(): bool
     {
-        // Require permission from milestone 03
-        return Auth::user()->hasPermissionTo('asset_scanner.use');
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        
+        return $user ? $user->hasPermissionTo('asset_scanner.use') : false;
     }
 
     public function mount()
     {
-        abort_unless(Auth::user()->hasPermissionTo('asset_scanner.use'), 403);
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        
+        abort_unless($user && $user->hasPermissionTo('asset_scanner.use'), 403);
     }
+
+    public ?Asset $scannedAsset = null;
+    public ?string $scanError = null;
 
     public function handleScanResult($inventoryNumber)
     {
@@ -41,28 +51,34 @@ class AssetScanner extends Page
             return;
         }
 
-        $asset = Asset::withTrashed()->where('inventory_number', $inventoryNumber)->first();
+        $asset = Asset::with(['category', 'location', 'pic'])->withTrashed()->where('inventory_number', $inventoryNumber)->first();
 
         if ($asset) {
             if ($asset->trashed()) {
+                $this->scannedAsset = null;
+                $this->scanError = "Aset {$inventoryNumber} telah dihapus dari sistem.";
                 Notification::make()
                     ->title('Aset Dihapus')
-                    ->body("Aset {$inventoryNumber} telah dihapus dari sistem (Soft Deleted).")
+                    ->body($this->scanError)
                     ->danger()
                     ->send();
                 return;
             }
 
+            $this->scannedAsset = $asset;
+            $this->scanError = null;
+
             Notification::make()
                 ->title('Aset Ditemukan')
                 ->success()
                 ->send();
-                
-            return redirect()->to(\App\Filament\Resources\AssetResource::getUrl('view', ['record' => $asset]));
         } else {
+            $this->scannedAsset = null;
+            $this->scanError = "Tidak ada aset dengan nomor inventaris: {$inventoryNumber}";
+            
             Notification::make()
                 ->title('Aset Tidak Ditemukan')
-                ->body("Tidak ada aset dengan nomor inventaris: {$inventoryNumber}")
+                ->body($this->scanError)
                 ->danger()
                 ->send();
         }

@@ -207,10 +207,17 @@
             // Inisialisasi scanner pada elemen div
             this.html5QrCode = new Html5Qrcode('reader-video-container');
             
-            // Konfigurasi khusus untuk barcode 1D (persegi panjang)
+            // Konfigurasi khusus untuk barcode 1D (persegi panjang) yang responsif
             const config = { 
                 fps: 10,
-                qrbox: { width: 300, height: 150 },
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    let boxWidth = Math.floor(viewfinderWidth * 0.85);
+                    let boxHeight = Math.floor(boxWidth * 0.4); 
+                    if (boxHeight > viewfinderHeight * 0.8) {
+                        boxHeight = Math.floor(viewfinderHeight * 0.8);
+                    }
+                    return { width: boxWidth, height: boxHeight };
+                },
                 aspectRatio: 1.333334,
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.CODE_128,

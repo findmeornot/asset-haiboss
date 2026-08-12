@@ -88,8 +88,15 @@
             
             const config = { 
                 fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    let boxWidth = Math.floor(viewfinderWidth * 0.85);
+                    let boxHeight = Math.floor(boxWidth * 0.4); // Buat persegi panjang (wide) untuk barcode 1D
+                    if (boxHeight > viewfinderHeight * 0.8) {
+                        boxHeight = Math.floor(viewfinderHeight * 0.8);
+                    }
+                    return { width: boxWidth, height: boxHeight };
+                },
+                aspectRatio: 1.777778, // 16:9 menyesuaikan layout css
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.CODE_128,
                     Html5QrcodeSupportedFormats.CODE_39,

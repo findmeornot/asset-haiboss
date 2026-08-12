@@ -25,6 +25,14 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        $adminExample = User::firstOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Admin Example',
+                'password' => bcrypt('password'),
+            ]
+        );
+
         $this->call(RolePermissionSeeder::class);
         $this->call(CategorySeeder::class);
     }

@@ -3,13 +3,16 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RoleResource\Pages;
+use App\Models\Permission;
 use App\Models\Role;
 use Filament\Forms\Components;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class RoleResource extends Resource
 {
@@ -34,21 +37,79 @@ class RoleResource extends Resource
     {
         return $schema
             ->components([
-                \Filament\Schemas\Components\Section::make('Role & Permissions')
+                \Filament\Schemas\Components\Section::make('Informasi Role')
+                    ->description('Tentukan nama role untuk mengelompokkan hak akses pengguna dalam sistem.')
                     ->schema([
                         Components\TextInput::make('name')
                             ->label('Nama Role')
                             ->required()
                             ->unique(ignoreRecord: true)
-                            ->maxLength(255),
-                        Components\Select::make('permissions')
-                            ->label('Hak Akses (Permissions)')
-                            ->multiple()
-                            ->relationship('permissions', 'name')
-                            ->preload()
-                            ->searchable(),
-                    ]),
+                            ->maxLength(255)
+                            ->placeholder('Contoh: Superadmin, Manager Inventaris, Staff Finance'),
+                    ])
+                    ->columnSpanFull(),
+
+                \Filament\Schemas\Components\Section::make('Hak Akses (Permissions)')
+                    ->description('Permission dikelompokkan per modul. Centang hak akses yang diberikan untuk role ini.')
+                    ->schema(static::permissionChecklistSchema())
+                    ->columns([
+                        'default' => 1,
+                        'md' => 2,
+                    ])
+                    ->columnSpanFull(),
             ]);
+    }
+
+    public static function permissionGroups(): Collection
+    {
+        return Permission::all()->groupBy(fn (Permission $permission): string => Str::before($permission->name, '.'));
+    }
+
+    protected static function permissionGroupFieldName(string $group): string
+    {
+        return 'permission_group_' . $group;
+    }
+
+    public static function permissionChecklistSchema(): array
+    {
+        return static::permissionGroups()
+            ->map(function (Collection $permissions, string $group) {
+                $label = Str::headline($group);
+
+                return \Filament\Schemas\Components\Section::make($label)
+                    ->collapsible()
+                    ->compact()
+                    ->schema([
+                        Components\CheckboxList::make(static::permissionGroupFieldName($group))
+                            ->hiddenLabel()
+                            ->options($permissions->pluck('name', 'id')->all())
+                            ->columns(2)
+                            ->bulkToggleable(),
+                    ]);
+            })
+            ->values()
+            ->all();
+    }
+
+    public static function permissionGroupDataFromRecord(Role $record): array
+    {
+        $selected = $record->permissions()->pluck('permissions.id')->all();
+
+        return static::permissionGroups()
+            ->mapWithKeys(fn (Collection $permissions, string $group): array => [
+                static::permissionGroupFieldName($group) => $permissions->pluck('id')->intersect($selected)->values()->all(),
+            ])
+            ->all();
+    }
+
+    public static function extractPermissionIds(array $data): array
+    {
+        return collect($data)
+            ->filter(fn ($value, $key): bool => str_starts_with($key, 'permission_group_'))
+            ->flatten()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public static function table(Table $table): Table
@@ -79,7 +140,9 @@ class RoleResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageRoles::route('/'),
+            'index' => Pages\ListRoles::route('/'),
+            'create' => Pages\CreateRole::route('/create'),
+            'edit' => Pages\EditRole::route('/{record}/edit'),
         ];
     }
 }

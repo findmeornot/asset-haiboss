@@ -28,10 +28,11 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
-            ->brandLogo('/logo.png')
+            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->passwordReset(\App\Filament\Pages\Auth\CustomRequestPasswordReset::class)
+            ->brandLogo(asset('logo.png'))
             ->brandLogoHeight('2.5rem')
-            ->favicon('/favicon.png')
+            ->favicon(asset('favicon.png'))
             ->colors([
                 'primary' => Color::Blue,
             ])

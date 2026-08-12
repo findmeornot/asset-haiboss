@@ -3,10 +3,10 @@
         {{-- Shortcut ke Scanner Aset --}}
         <a
             href="{{ route('filament.inventory.pages.asset-scanner') }}"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-primary-600 rounded-lg shadow-sm hover:bg-primary-500 transition-colors focus:outline-none"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800 rounded-lg transition-colors focus:outline-none"
             title="Scanner Aset"
         >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4zm12 0h4v4h-4v-4zM4 10h16"/>
             </svg>
             <span>Scanner Aset</span>

@@ -320,6 +320,7 @@ class AssetResource extends Resource
             ->actions([
                 \Filament\Actions\Action::make('printLabel')
                     ->label('Cetak Barcode')
+                    ->hiddenLabel()
                     ->icon('heroicon-o-bars-4')
                     ->color('success')
                     ->modalHeading('Preview Label Aset')
@@ -336,6 +337,7 @@ class AssetResource extends Resource
                     ]),
                 \Filament\Actions\Action::make('changeStatus')
                     ->label('Ubah Status')
+                    ->hiddenLabel()
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->visible(fn (?Asset $record) => Auth::user()->hasPermissionTo('status.update') && ($record ? !$record->trashed() : true))
@@ -414,13 +416,18 @@ class AssetResource extends Resource
                                 ->send();
                         }
                     }),
-                \Filament\Actions\ViewAction::make(),
-                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\ViewAction::make()
+                    ->hiddenLabel(),
+                \Filament\Actions\EditAction::make()
+                    ->hiddenLabel(),
                 \Filament\Actions\DeleteAction::make()
+                    ->hiddenLabel()
                     ->modalHeading('Hapus Aset (Soft Delete)')
                     ->modalDescription('Aset akan dihapus dari daftar aktif, tetapi histori tetap tersimpan.'),
-                \Filament\Actions\ForceDeleteAction::make(),
-                \Filament\Actions\RestoreAction::make(),
+                \Filament\Actions\ForceDeleteAction::make()
+                    ->hiddenLabel(),
+                \Filament\Actions\RestoreAction::make()
+                    ->hiddenLabel(),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([

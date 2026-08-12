@@ -137,7 +137,8 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->relationship('location', 'name'),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\ViewAction::make()
+                    ->hiddenLabel(),
             ])
             ->emptyStateHeading('Belum ada barang di kategori ini')
             ->emptyStateDescription('Tambahkan barang baru dan pilih kategori yang sesuai.')

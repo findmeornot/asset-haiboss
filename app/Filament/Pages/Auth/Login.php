@@ -2,12 +2,20 @@
 
 namespace App\Filament\Pages\Auth;
 
+use App\Filament\Auth\Responses\PanelPriorityLoginResponse;
+use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Auth\Pages\Login as AuthLogin;
+use Filament\Facades\Filament;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Illuminate\Auth\SessionGuard;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Timebox;
 use Illuminate\Validation\ValidationException;
 
 class Login extends AuthLogin
@@ -59,13 +67,87 @@ class Login extends AuthLogin
     }
 
     /**
-     * Override authenticate: verifikasi Turnstile dulu, baru proses login.
+     * Urutan prioritas panel tujuan redirect setelah login, dipakai saat user
+     * punya akses ke lebih dari satu panel: inventory didahulukan dari admin.
+     */
+    protected const PANEL_REDIRECT_PRIORITY = ['inventory', 'admin'];
+
+    /**
+     * Override authenticate: verifikasi Turnstile dulu, lalu login tanpa
+     * dibatasi ke panel tempat form login dibuka (beda dari default Filament
+     * yang menolak login jika user tidak punya akses ke panel saat ini).
+     * Redirect tujuan ditentukan dari panel yang benar-benar bisa diakses user.
      */
     public function authenticate(): ?LoginResponse
     {
         $this->verifyTurnstile();
 
-        return parent::authenticate();
+        try {
+            $this->rateLimit(5);
+        } catch (TooManyRequestsException $exception) {
+            $this->getRateLimitedNotification($exception)?->send();
+
+            return null;
+        }
+
+        $data = $this->form->getState();
+
+        /** @var SessionGuard $authGuard */
+        $authGuard = Filament::auth();
+
+        $authProvider = $authGuard->getProvider();
+        $credentials = $this->getCredentialsFromFormData($data);
+        $remember = $data['remember'] ?? false;
+        $timeboxDuration = (int) config('auth.timebox_duration', 200_000);
+
+        $user = app(Timebox::class)->call(function (Timebox $timebox) use ($authProvider, $authGuard, $credentials, $remember): Authenticatable {
+            $this->fireAttemptingEvent($authGuard, $credentials, $remember);
+
+            $user = $authProvider->retrieveByCredentials($credentials);
+
+            if ((! $user) || (! $authProvider->validateCredentials($user, $credentials))) {
+                $this->fireFailedEvent($authGuard, $user, $credentials);
+                $this->throwFailureValidationException();
+            }
+
+            $timebox->returnEarly();
+
+            return $user;
+        }, $timeboxDuration);
+
+        $targetPanel = $this->resolveAccessiblePanel($user);
+
+        if (
+            (! $authGuard->attemptWhen($credentials, fn (): bool => $targetPanel !== null, $remember))
+            || $targetPanel === null
+        ) {
+            $this->fireFailedEvent($authGuard, $user, $credentials);
+            $this->throwFailureValidationException();
+        }
+
+        session()->regenerate();
+
+        return new PanelPriorityLoginResponse($targetPanel);
+    }
+
+    /**
+     * Cari panel pertama (sesuai urutan prioritas) yang bisa diakses user.
+     */
+    protected function resolveAccessiblePanel(Authenticatable $user): ?Panel
+    {
+        if (! ($user instanceof FilamentUser)) {
+            return Filament::getCurrentOrDefaultPanel();
+        }
+
+        foreach (self::PANEL_REDIRECT_PRIORITY as $panelId) {
+            $panel = Filament::getPanel($panelId, isStrict: false);
+
+            if ($panel && $user->canAccessPanel($panel)) {
+                return $panel;
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -89,14 +89,7 @@
                 
                 const config = { 
                     fps: 10,
-                    qrbox: function(viewfinderWidth, viewfinderHeight) {
-                        let boxWidth = Math.floor(viewfinderWidth * 0.85);
-                        let boxHeight = Math.floor(boxWidth * 0.4); // Buat persegi panjang (wide) untuk barcode 1D
-                        if (boxHeight > viewfinderHeight * 0.8) {
-                            boxHeight = Math.floor(viewfinderHeight * 0.8);
-                        }
-                        return { width: boxWidth, height: boxHeight };
-                    },
+                    // qrbox dihapus agar Html5Qrcode scan full-frame dan tidak menggambar SVG overlay bawaan yang rusak di iOS
                     aspectRatio: 1.777778, // 16:9 menyesuaikan layout css
                     formatsToSupport: [
                         Html5QrcodeSupportedFormats.CODE_128,
@@ -218,7 +211,33 @@
                     </div>
 
                     <!-- Html5Qrcode Container -->
-                    <div id="reader-video-container" x-show="isScanning" class="absolute inset-0 w-full h-full [&>video]:object-cover" style="display: none;"></div>
+                    <div id="reader-video-container" x-show="isScanning" class="absolute inset-0 w-full h-full [&>video]:w-full [&>video]:h-full [&>video]:object-cover" style="display: none;"></div>
+                    
+                    <!-- Scanner Guide Overlay (CSS Custom) -->
+                    <div x-show="isScanning" class="absolute inset-0 z-20 pointer-events-none" style="display: none;">
+                        <!-- Dark backdrop outside the frame -->
+                        <div class="absolute inset-0" style="background: radial-gradient(rgba(0,0,0,0.2) 20%, rgba(0,0,0,0.6) 100%);"></div>
+                        
+                        <!-- Box Frame -->
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[min(72vw,300px)] lg:w-[min(60%,360px)] aspect-square rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]">
+                            
+                            <!-- 4 Corners -->
+                            <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
+                            <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
+                            <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
+                            <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-lg"></div>
+                            
+                            <!-- Scanning Animation Line -->
+                            <div class="w-full h-[2px] bg-danger-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] absolute animate-[scanline_2s_linear_infinite]"></div>
+                        </div>
+
+                        <!-- Helper Text -->
+                        <div class="absolute bottom-6 left-0 right-0 text-center">
+                            <span class="bg-black/60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
+                                Arahkan barcode ke dalam area kotak
+                            </span>
+                        </div>
+                    </div>
                     
                     <!-- Tombol Stop Scanner -->
                     <div x-show="isScanning" class="absolute bottom-3 left-0 right-0 flex justify-center z-10" style="display: none;">

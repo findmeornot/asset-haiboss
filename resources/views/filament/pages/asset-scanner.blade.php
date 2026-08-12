@@ -83,44 +83,46 @@
             
             this.isScanning = true;
             
-            // Kita gunakan Html5Qrcode yang jauh lebih stabil di iOS
-            this.html5QrCode = new Html5Qrcode('reader-video-container');
-            
-            const config = { 
-                fps: 10,
-                qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    let boxWidth = Math.floor(viewfinderWidth * 0.85);
-                    let boxHeight = Math.floor(boxWidth * 0.4); // Buat persegi panjang (wide) untuk barcode 1D
-                    if (boxHeight > viewfinderHeight * 0.8) {
-                        boxHeight = Math.floor(viewfinderHeight * 0.8);
-                    }
-                    return { width: boxWidth, height: boxHeight };
-                },
-                aspectRatio: 1.777778, // 16:9 menyesuaikan layout css
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.QR_CODE
-                ]
-            };
+            // Tunggu DOM (display: block) agar Html5Qrcode bisa mengukur lebar dengan benar
+            this.$nextTick(() => {
+                this.html5QrCode = new Html5Qrcode('reader-video-container');
+                
+                const config = { 
+                    fps: 10,
+                    qrbox: function(viewfinderWidth, viewfinderHeight) {
+                        let boxWidth = Math.floor(viewfinderWidth * 0.85);
+                        let boxHeight = Math.floor(boxWidth * 0.4); // Buat persegi panjang (wide) untuk barcode 1D
+                        if (boxHeight > viewfinderHeight * 0.8) {
+                            boxHeight = Math.floor(viewfinderHeight * 0.8);
+                        }
+                        return { width: boxWidth, height: boxHeight };
+                    },
+                    aspectRatio: 1.777778, // 16:9 menyesuaikan layout css
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.CODE_39,
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.UPC_A,
+                        Html5QrcodeSupportedFormats.QR_CODE
+                    ]
+                };
 
-            this.html5QrCode.start(
-                { facingMode: 'environment' },
-                config,
-                (decodedText) => {
-                    if (this.isScanning) {
-                        this.handleSuccess(decodedText);
+                this.html5QrCode.start(
+                    { facingMode: 'environment' },
+                    config,
+                    (decodedText) => {
+                        if (this.isScanning) {
+                            this.handleSuccess(decodedText);
+                        }
+                    },
+                    (errorMessage) => {
+                        // Ignore parse errors
                     }
-                },
-                (errorMessage) => {
-                    // Ignore parse errors (happens every frame when no barcode is found)
-                }
-            ).catch(err => {
-                console.error('Kamera error:', err);
-                alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
-                this.isScanning = false;
+                ).catch(err => {
+                    console.error('Kamera error:', err);
+                    alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
+                    this.isScanning = false;
+                });
             });
         },
         

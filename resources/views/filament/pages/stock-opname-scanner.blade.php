@@ -204,48 +204,50 @@
             
             this.isScanning = true;
             
-            // Inisialisasi scanner pada elemen div
-            this.html5QrCode = new Html5Qrcode('reader-video-container');
-            
-            // Konfigurasi khusus untuk barcode 1D (persegi panjang) yang responsif
-            const config = { 
-                fps: 10,
-                qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    let boxWidth = Math.floor(viewfinderWidth * 0.85);
-                    let boxHeight = Math.floor(boxWidth * 0.4); 
-                    if (boxHeight > viewfinderHeight * 0.8) {
-                        boxHeight = Math.floor(viewfinderHeight * 0.8);
-                    }
-                    return { width: boxWidth, height: boxHeight };
-                },
-                aspectRatio: 1.333334,
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E,
-                    Html5QrcodeSupportedFormats.QR_CODE
-                ]
-            };
+            this.$nextTick(() => {
+                // Inisialisasi scanner pada elemen div
+                this.html5QrCode = new Html5Qrcode('reader-video-container');
+                
+                // Konfigurasi khusus untuk barcode 1D (persegi panjang) yang responsif
+                const config = { 
+                    fps: 10,
+                    qrbox: function(viewfinderWidth, viewfinderHeight) {
+                        let boxWidth = Math.floor(viewfinderWidth * 0.85);
+                        let boxHeight = Math.floor(boxWidth * 0.4); 
+                        if (boxHeight > viewfinderHeight * 0.8) {
+                            boxHeight = Math.floor(viewfinderHeight * 0.8);
+                        }
+                        return { width: boxWidth, height: boxHeight };
+                    },
+                    aspectRatio: 1.333334,
+                    formatsToSupport: [
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.CODE_39,
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8,
+                        Html5QrcodeSupportedFormats.UPC_A,
+                        Html5QrcodeSupportedFormats.UPC_E,
+                        Html5QrcodeSupportedFormats.QR_CODE
+                    ]
+                };
 
-            this.html5QrCode.start(
-                { facingMode: 'environment' },
-                config,
-                (decodedText, decodedResult) => {
-                    // Success callback
-                    if (this.isScanning) {
-                        this.handleSuccess(decodedText);
+                this.html5QrCode.start(
+                    { facingMode: 'environment' },
+                    config,
+                    (decodedText, decodedResult) => {
+                        // Success callback
+                        if (this.isScanning) {
+                            this.handleSuccess(decodedText);
+                        }
+                    },
+                    (errorMessage) => {
+                        // Parse error, just ignore
                     }
-                },
-                (errorMessage) => {
-                    // Parse error, just ignore (happens every frame when no barcode is found)
-                }
-            ).catch(err => {
-                console.error('Kamera error:', err);
-                alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
-                this.isScanning = false;
+                ).catch(err => {
+                    console.error('Kamera error:', err);
+                    alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
+                    this.isScanning = false;
+                });
             });
         },
         

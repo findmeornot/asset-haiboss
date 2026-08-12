@@ -10,7 +10,7 @@ class Category extends Model {
 
     public const TYPES = [
         'asset'     => 'Aset',
-        'inventory' => 'Inventoris',
+        'inventory' => 'Inventaris',
         'supply'    => 'Persediaan',
     ];
 

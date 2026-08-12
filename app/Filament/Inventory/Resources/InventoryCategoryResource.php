@@ -5,13 +5,13 @@ namespace App\Filament\Inventory\Resources;
 use App\Filament\Inventory\Resources\InventoryCategoryResource\Pages;
 
 /**
- * Menampilkan daftar barang berkategori "Inventoris" (type = inventory).
+ * Menampilkan daftar barang berkategori "Inventaris" (type = inventory).
  */
 class InventoryCategoryResource extends BaseCategoryAssetResource
 {
     protected static string $categoryType = 'inventory';
 
-    protected static ?string $slug = 'kategori-inventoris';
+    protected static ?string $slug = 'kategori-inventaris';
 
     public static function getNavigationIcon(): string|\Illuminate\Contracts\Support\Htmlable|null
     {
@@ -20,17 +20,17 @@ class InventoryCategoryResource extends BaseCategoryAssetResource
 
     public static function getModelLabel(): string
     {
-        return 'Inventoris';
+        return 'Inventaris';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Inventoris';
+        return 'Inventaris';
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Inventoris';
+        return 'Inventaris';
     }
 
     public static function getPages(): array

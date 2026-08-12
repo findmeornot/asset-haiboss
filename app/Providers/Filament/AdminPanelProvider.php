@@ -30,6 +30,14 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login(\App\Filament\Pages\Auth\Login::class)
             ->passwordReset(\App\Filament\Pages\Auth\CustomRequestPasswordReset::class)
+            ->profile(\App\Filament\Pages\Auth\EditProfile::class)
+            ->userMenuItems([
+                'profile' => \Filament\Navigation\MenuItem::make()
+                    ->label(fn () => auth()->user()?->name ?? 'Profile')
+                    ->url(fn (): string => \App\Filament\Pages\Auth\EditProfile::getUrl())
+                    ->icon('heroicon-o-user-circle')
+                    ->sort(-100),
+            ])
             ->brandLogo(asset('logo.png'))
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('favicon.png'))

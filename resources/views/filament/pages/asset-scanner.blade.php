@@ -63,7 +63,26 @@
         isScanning: false,
         stream: null,
         barcodeDetector: null,
-        
+        torchOn: false,
+
+        toggleTorch(on) {
+            if (!this.stream) {
+                return;
+            }
+
+            const track = this.stream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+
+            if (!capabilities.torch) {
+                alert('Kamera ini tidak mendukung flash.');
+                return;
+            }
+
+            track.applyConstraints({ advanced: [{ torch: on }] })
+                .then(() => { this.torchOn = on; })
+                .catch(err => console.error('Torch error:', err));
+        },
+
         initScanner() {
             if ('BarcodeDetector' in window) {
                 this.barcodeDetector = new BarcodeDetector({
@@ -182,7 +201,8 @@
 
         stopScanner() {
             this.isScanning = false;
-            
+            this.torchOn = false;
+
             if (this.codeReader) {
                 this.codeReader.reset();
             }
@@ -224,19 +244,36 @@
                 <!-- HEADER PANEL KIRI -->
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-base font-bold text-gray-900 dark:text-white">Scan Barcode</h2>
-                    
-                    <!-- Badge Status Kamera -->
-                    <div x-show="!isScanning" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                        <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Kamera tidak aktif</span>
-                    </div>
-                    
-                    <div x-show="isScanning" style="display: none;" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-success-50 dark:bg-success-500/10 border border-success-200 dark:border-success-500/20">
-                        <span class="relative flex h-1.5 w-1.5">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-success-500"></span>
-                        </span>
-                        <span class="text-xs font-medium text-success-600 dark:text-success-500">Kamera aktif</span>
+
+                    <div class="flex items-center gap-2">
+                        <!-- Badge Status Kamera -->
+                        <div x-show="!isScanning" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-300">Kamera tidak aktif</span>
+                        </div>
+
+                        <div x-show="isScanning" style="display: none;" class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-success-50 dark:bg-success-500/10 border border-success-200 dark:border-success-500/20">
+                            <span class="relative flex h-1.5 w-1.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-success-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-success-500"></span>
+                            </span>
+                            <span class="text-xs font-medium text-success-600 dark:text-success-500">Kamera aktif</span>
+                        </div>
+
+                        <!-- Toggle Flash -->
+                        <button
+                            type="button"
+                            x-show="isScanning"
+                            style="display: none;"
+                            x-on:click="toggleTorch(!torchOn)"
+                            x-bind:class="torchOn ? 'text-primary-600 bg-primary-50 dark:text-primary-400 dark:bg-primary-500/10' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700'"
+                            class="p-1.5 rounded-md transition-colors focus:outline-none"
+                            title="Toggle Flash"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 

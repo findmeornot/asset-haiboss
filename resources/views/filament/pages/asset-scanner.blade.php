@@ -59,136 +59,62 @@
     </style>
 
     <div x-data="{
-        codeReader: null,
+        html5QrCode: null,
         isScanning: false,
-        stream: null,
-        barcodeDetector: null,
-        torchOn: false,
-
-        toggleTorch(on) {
-            if (!this.stream) {
-                return;
-            }
-
-            const track = this.stream.getVideoTracks()[0];
-            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-
-            if (!capabilities.torch) {
-                alert('Kamera ini tidak mendukung flash.');
-                return;
-            }
-
-            track.applyConstraints({ advanced: [{ torch: on }] })
-                .then(() => { this.torchOn = on; })
-                .catch(err => console.error('Torch error:', err));
-        },
 
         initScanner() {
-            if ('BarcodeDetector' in window) {
-                this.barcodeDetector = new BarcodeDetector({
-                    formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'upc_a']
-                });
-            }
-
-            if (typeof ZXing === 'undefined') {
+            if (typeof Html5Qrcode === 'undefined') {
                 let script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.2/umd/index.min.js';
+                script.src = 'https://unpkg.com/html5-qrcode';
                 script.onload = () => {
-                    this.initZxing();
                     this.setupUsbScanner();
                 };
                 document.head.appendChild(script);
             } else {
-                this.initZxing();
                 this.setupUsbScanner();
             }
         },
-        
-        initZxing() {
-            const hints = new Map();
-            hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-            this.codeReader = new ZXing.BrowserMultiFormatReader(hints);
-        },
 
         startScanner() {
-            if (!this.codeReader && !this.barcodeDetector) {
+            if (typeof Html5Qrcode === 'undefined') {
                 alert('Scanner library is still loading. Please try again in a moment.');
                 return;
             }
             
             this.isScanning = true;
-            const video = document.getElementById('reader-video');
+            
+            // Kita gunakan Html5Qrcode yang jauh lebih stabil di iOS
+            this.html5QrCode = new Html5Qrcode('reader-video-container');
+            
+            const config = { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.QR_CODE
+                ]
+            };
 
-            navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-            })
-            .then(stream => {
-                this.stream = stream;
-                video.srcObject = stream;
-                video.setAttribute('playsinline', true);
-                video.play();
-                
-                try {
-                    const track = stream.getVideoTracks()[0];
-                    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
-                    const zoomContainer = document.getElementById('zoom-container');
-                    const zoomSlider = document.getElementById('zoom-slider');
-                    
-                    if (capabilities.zoom) {
-                        zoomContainer.style.display = 'flex';
-                        zoomSlider.min = capabilities.zoom.min;
-                        zoomSlider.max = capabilities.zoom.max;
-                        zoomSlider.step = capabilities.zoom.step;
-                        
-                        let idealZoom = Math.min(2.0, capabilities.zoom.max);
-                        track.applyConstraints({ advanced: [{ zoom: idealZoom }] });
-                        zoomSlider.value = idealZoom;
-                        
-                        zoomSlider.oninput = (e) => {
-                            track.applyConstraints({ advanced: [{ zoom: e.target.value }] });
-                        };
-                    } else {
-                        zoomContainer.style.display = 'none';
+            this.html5QrCode.start(
+                { facingMode: 'environment' },
+                config,
+                (decodedText) => {
+                    if (this.isScanning) {
+                        this.handleSuccess(decodedText);
                     }
-                } catch (e) {
-                    console.error('Zoom not supported', e);
+                },
+                (errorMessage) => {
+                    // Ignore parse errors (happens every frame when no barcode is found)
                 }
-                
-                if (this.barcodeDetector) {
-                    this.scanNative(video);
-                } else {
-                    this.codeReader.decodeFromVideoElement(video, (result, err) => {
-                        if (result && this.isScanning) {
-                            this.handleSuccess(result.text);
-                        }
-                    });
-                }
-            })
-            .catch(err => {
+            ).catch(err => {
                 console.error('Kamera error:', err);
                 alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
-                this.stopScanner();
+                this.isScanning = false;
             });
-        },
-        
-        scanNative(video) {
-            if (!this.isScanning) return;
-            
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                this.barcodeDetector.detect(video)
-                .then(barcodes => {
-                    if (barcodes.length > 0 && this.isScanning) {
-                        this.handleSuccess(barcodes[0].rawValue);
-                    } else {
-                        requestAnimationFrame(() => this.scanNative(video));
-                    }
-                })
-                .catch(err => {
-                    requestAnimationFrame(() => this.scanNative(video));
-                });
-            } else {
-                requestAnimationFrame(() => this.scanNative(video));
-            }
         },
         
         handleSuccess(decodedText) {
@@ -201,21 +127,14 @@
 
         stopScanner() {
             this.isScanning = false;
-            this.torchOn = false;
 
-            if (this.codeReader) {
-                this.codeReader.reset();
+            if (this.html5QrCode) {
+                this.html5QrCode.stop().then(() => {
+                    this.html5QrCode.clear();
+                }).catch(err => {
+                    console.error('Error stopping scanner:', err);
+                });
             }
-            
-            if (this.stream) {
-                this.stream.getTracks().forEach(track => track.stop());
-                this.stream = null;
-            }
-            
-            const video = document.getElementById('reader-video');
-            if (video) video.srcObject = null;
-            
-            document.getElementById('zoom-container').style.display = 'none';
         },
 
         setupUsbScanner() {
@@ -289,17 +208,8 @@
                         </x-filament::button>
                     </div>
 
-                    <!-- Video Stream Live -->
-                    <video id="reader-video" x-show="isScanning" class="absolute inset-0 w-full h-full object-cover" style="display: none;"></video>
-                    
-                    <!-- Scanner Guide Overlay -->
-                    <div x-show="isScanning" class="absolute inset-0 pointer-events-none" style="display: none;">
-                        <div class="absolute inset-0 bg-black/40"></div>
-                        <!-- Kotak tengah pembidik -->
-                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3/4 max-w-[250px] h-[60%] border-2 border-primary-500 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]">
-                            <div class="w-full h-0.5 bg-danger-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] absolute animate-[scanline_2s_linear_infinite]"></div>
-                        </div>
-                    </div>
+                    <!-- Html5Qrcode Container -->
+                    <div id="reader-video-container" x-show="isScanning" class="absolute inset-0 w-full h-full [&>video]:object-cover" style="display: none;"></div>
                     
                     <!-- Tombol Stop Scanner -->
                     <div x-show="isScanning" class="absolute bottom-3 left-0 right-0 flex justify-center z-10" style="display: none;">
@@ -307,13 +217,6 @@
                             Hentikan
                         </x-filament::button>
                     </div>
-                </div>
-
-                <!-- Slider Zoom -->
-                <div id="zoom-container" style="display: none;" class="flex items-center justify-center gap-2 mb-4">
-                    <x-filament::icon icon="heroicon-m-magnifying-glass-minus" class="w-4 h-4 text-gray-400" />
-                    <input type="range" id="zoom-slider" class="w-40 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                    <x-filament::icon icon="heroicon-m-magnifying-glass-plus" class="w-4 h-4 text-gray-400" />
                 </div>
 
                 <!-- USB SCANNER INPUT -->

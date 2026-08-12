@@ -200,7 +200,7 @@ class UserResource extends Resource
             ->filters([
                 //
             ])
-            ->recordActionsColumnLabel('ACTIONS')
+            ->recordActionsColumnLabel('Actions')
             ->actions([
                 ViewAction::make()
                     ->icon('heroicon-o-eye')

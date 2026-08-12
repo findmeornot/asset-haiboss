@@ -77,6 +77,11 @@ class AssetResource extends Resource
                                     Components\TextInput::make('code')
                                         ->label('Kode Kategori')
                                         ->unique('categories', 'code'),
+                                    Components\Select::make('type')
+                                        ->label('Tipe Kategori')
+                                        ->options(\App\Models\Category::TYPES)
+                                        ->default('asset')
+                                        ->required(),
                                 ])
                                 ->createOptionUsing(function (array $data, callable $get) {
                                     $category = \App\Models\Category::create($data);

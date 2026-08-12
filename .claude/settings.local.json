@@ -17,7 +17,11 @@
       "Bash(php -m)",
       "Bash(php vendor/bin/phpunit --configuration=/tmp/claude-1000/-mnt-d-TOPLOKER-asset-haiboss/1c4ce8d5-f14e-4440-9dec-09628f6fe816/scratchpad/phpunit-verify.xml --filter=TmpAssetClassificationVerifyTest)",
       "Bash(php vendor/bin/pest --configuration=/tmp/claude-1000/-mnt-d-TOPLOKER-asset-haiboss/1c4ce8d5-f14e-4440-9dec-09628f6fe816/scratchpad/phpunit-verify.xml --filter=TmpAssetClassificationVerifyTest)",
-      "Bash(php vendor/bin/pest --configuration=/tmp/claude-1000/-mnt-d-TOPLOKER-asset-haiboss/1c4ce8d5-f14e-4440-9dec-09628f6fe816/scratchpad/phpunit-verify.xml --filter=TmpDebugTest)"
+      "Bash(php vendor/bin/pest --configuration=/tmp/claude-1000/-mnt-d-TOPLOKER-asset-haiboss/1c4ce8d5-f14e-4440-9dec-09628f6fe816/scratchpad/phpunit-verify.xml --filter=TmpDebugTest)",
+      "Bash(git fetch *)",
+      "Bash(npm run *)",
+      "Bash(systemctl status *)",
+      "Bash(mysql -h127.0.0.1 -uroot -psurabaya06 -e \"select @@hostname, @@version;\")"
     ]
   }
 }

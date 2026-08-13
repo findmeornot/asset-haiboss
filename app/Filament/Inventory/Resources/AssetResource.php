@@ -113,6 +113,54 @@ class AssetResource extends Resource
                                 ->required(),
                         ])->columns(2),
 
+                    \Filament\Schemas\Components\Section::make('Foto Barang')
+                        ->description('Opsional • Maks. 3 foto. Tambahkan foto barang untuk membantu identifikasi fisik.')
+                        ->schema([
+                            Components\FileUpload::make('asset_photos')
+                                ->hiddenLabel()
+                                ->multiple()
+                                ->maxFiles(3)
+                                ->image()
+                                ->imageEditor()
+                                ->imageResizeMode('contain')
+                                ->imageResizeTargetWidth('2000')
+                                ->imageResizeTargetHeight('2000')
+                                ->maxSize(5120) // 5MB limit per file
+                                ->directory('asset-photos')
+                                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                                ->helperText('Dukungan format: JPG, PNG, WebP (Maks 5MB per file). Anda dapat memilih beberapa foto sekaligus dari galeri atau kamera.')
+                                ->panelLayout('grid')
+                                ->appendFiles()
+                                ->formatStateUsing(function ($record) {
+                                    if (! $record) return [];
+                                    return $record->photos->sortBy('sort_order')->pluck('file_path')->toArray();
+                                })
+                                ->saveRelationshipsUsing(function ($component, $state, $record) {
+                                    $existingPaths = $record->photos->pluck('file_path')->toArray();
+                                    $newPaths = array_values($state ?? []);
+                                    
+                                    $deletedPaths = array_diff($existingPaths, $newPaths);
+                                    foreach ($deletedPaths as $path) {
+                                        $record->photos()->where('file_path', $path)->first()?->delete();
+                                    }
+                                    
+                                    $addedPaths = array_diff($newPaths, $existingPaths);
+                                    foreach ($addedPaths as $path) {
+                                        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+                                        $record->photos()->create([
+                                            'file_path' => $path,
+                                            'file_size' => $disk->exists($path) ? $disk->size($path) : null,
+                                            'mime_type' => $disk->exists($path) ? $disk->mimeType($path) : null,
+                                        ]);
+                                    }
+                                    
+                                    foreach ($newPaths as $index => $path) {
+                                        $record->photos()->where('file_path', $path)->update(['sort_order' => $index]);
+                                    }
+                                })
+                                ->dehydrated(false)
+                        ]),
+
                     \Filament\Schemas\Components\Section::make('Lokasi')
                         ->schema([
                             Components\Select::make('campus_id')

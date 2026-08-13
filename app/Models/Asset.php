@@ -23,6 +23,14 @@ class Asset extends Model {
                 }
             }
         });
+
+        static::forceDeleting(function (Asset $asset) {
+            foreach ($asset->photos as $photo) {
+                if ($photo->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($photo->file_path)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($photo->file_path);
+                }
+            }
+        });
     }
 
     public function classification(): BelongsTo { return $this->belongsTo(Classification::class); }
@@ -33,6 +41,7 @@ class Asset extends Model {
     public function purchase(): HasOne { return $this->hasOne(AssetPurchase::class); }
     public function financial(): HasOne { return $this->hasOne(AssetFinancial::class); }
     public function documents(): HasMany { return $this->hasMany(AssetDocument::class); }
+    public function photos(): HasMany { return $this->hasMany(AssetPhoto::class); }
     public function statusHistories(): HasMany { return $this->hasMany(AssetStatusHistory::class); }
     public function locationHistories(): HasMany { return $this->hasMany(AssetLocationHistory::class); }
     public function priceHistories(): HasMany { return $this->hasMany(AssetPriceHistory::class); }

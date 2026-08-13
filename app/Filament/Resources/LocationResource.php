@@ -42,7 +42,7 @@ class LocationResource extends Resource
                 \Filament\Schemas\Components\Section::make('Informasi Lokasi')
                     ->schema([
                         Components\Select::make('campus_id')
-                            ->label('Kampus')
+                            ->label('Gedung')
                             ->relationship('campus', 'name')
                             ->searchable()
                             ->preload()
@@ -78,7 +78,7 @@ class LocationResource extends Resource
             ->columns([
                 
                 Tables\Columns\TextColumn::make('campus.name')
-                    ->label('Kampus')
+                    ->label('Gedung')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')

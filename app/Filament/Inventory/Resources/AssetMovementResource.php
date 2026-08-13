@@ -60,7 +60,7 @@ class AssetMovementResource extends Resource
                         Components\Hidden::make('source_pic_id'),
 
                         Components\Select::make('destination_campus_id')
-                            ->label('Kampus Tujuan')
+                            ->label('Gedung Tujuan')
                             ->relationship('destinationCampus', 'name')
                             ->searchable()
                             ->preload()
@@ -92,9 +92,9 @@ class AssetMovementResource extends Resource
                     ->label('Aset')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('sourceCampus.name')
-                    ->label('Dari Kampus'),
+                    ->label('Dari Gedung'),
                 Tables\Columns\TextColumn::make('destinationCampus.name')
-                    ->label('Ke Kampus'),
+                    ->label('Ke Gedung'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()

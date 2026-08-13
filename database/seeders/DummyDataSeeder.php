@@ -13,7 +13,7 @@ class DummyDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Buat Data Kampus
+        // 1. Buat Data Gedung
         $campusData = [
             ['name' => 'Kampus Utama',    'address' => 'Jl. Raya Utama No. 1, Jakarta'],
             ['name' => 'Kampus Cabang A', 'address' => 'Jl. Sudirman No. 45, Surabaya'],

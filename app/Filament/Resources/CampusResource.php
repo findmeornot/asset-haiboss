@@ -39,14 +39,14 @@ class CampusResource extends Resource
     {
         return $schema
             ->components([
-                \Filament\Schemas\Components\Section::make('Informasi Kampus')
+                \Filament\Schemas\Components\Section::make('Informasi Gedung')
                     ->schema([
                         Components\TextInput::make('name')
-                            ->label('Nama Kampus')
+                            ->label('Nama Gedung')
                             ->required()
                             ->maxLength(255),
                         Components\TextInput::make('code')
-                            ->label('Kode Kampus')
+                            ->label('Kode Gedung')
                             ->unique(ignoreRecord: true)
                             ->maxLength(255),
                         Components\Textarea::make('address')

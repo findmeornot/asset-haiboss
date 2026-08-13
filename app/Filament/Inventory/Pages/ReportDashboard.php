@@ -61,7 +61,7 @@ class ReportDashboard extends Page implements HasForms
                             ->options([
                                 'all_assets' => 'Daftar Seluruh Barang',
                                 'by_location' => 'Barang per Lokasi',
-                                'by_campus' => 'Barang per Kampus',
+                                'by_campus' => 'Barang per Gedung',
                                 'by_category' => 'Barang per Kategori',
                                 'by_status' => 'Barang berdasarkan Status',
                                 'by_year' => 'Barang berdasarkan Tahun Pembelian',
@@ -77,7 +77,7 @@ class ReportDashboard extends Page implements HasForms
                         \Filament\Schemas\Components\Fieldset::make('Filter Spesifik')
                             ->schema([
                                 Components\Select::make('campus_id')
-                                    ->label('Kampus')
+                                    ->label('Gedung')
                                     ->options(\App\Models\Campus::pluck('name', 'id')),
                                 Components\Select::make('location_id')
                                     ->label('Lokasi')

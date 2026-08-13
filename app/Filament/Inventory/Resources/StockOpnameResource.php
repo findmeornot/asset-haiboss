@@ -42,7 +42,7 @@ class StockOpnameResource extends Resource
                             ->required()
                             ->maxLength(255),
                         Components\Select::make('campus_id')
-                            ->label('Kampus')
+                            ->label('Gedung')
                             ->relationship('campus', 'name')
                             ->searchable()
                             ->preload()
@@ -68,7 +68,7 @@ class StockOpnameResource extends Resource
                     ->label('Nama Kegiatan')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('campus.name')
-                    ->label('Kampus'),
+                    ->label('Gedung'),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()

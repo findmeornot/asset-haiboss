@@ -59,7 +59,7 @@
                 <th width="35%">Ke (Tujuan)</th>
             </tr>
             <tr>
-                <th>Kampus</th>
+                <th>Gedung</th>
                 <td>{{ $sourceCampus->name ?? '-' }}</td>
                 <td>{{ $destinationCampus->name ?? '-' }}</td>
             </tr>

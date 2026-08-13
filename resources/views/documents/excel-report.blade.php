@@ -25,13 +25,13 @@
                 @if(in_array($type, ['movements']))
                     <th style="background-color: #d9d9d9;">Tgl Mutasi</th>
                     <th style="background-color: #d9d9d9;">Nama Aset</th>
-                    <th style="background-color: #d9d9d9;">Dari Kampus</th>
-                    <th style="background-color: #d9d9d9;">Ke Kampus</th>
+                    <th style="background-color: #d9d9d9;">Dari Gedung</th>
+                    <th style="background-color: #d9d9d9;">Ke Gedung</th>
                     <th style="background-color: #d9d9d9;">Pemohon</th>
                     <th style="background-color: #d9d9d9;">Status</th>
                 @elseif($type === 'stock_opname')
                     <th style="background-color: #d9d9d9;">Nama Kegiatan</th>
-                    <th style="background-color: #d9d9d9;">Kampus</th>
+                    <th style="background-color: #d9d9d9;">Gedung</th>
                     <th style="background-color: #d9d9d9;">Tgl Mulai</th>
                     <th style="background-color: #d9d9d9;">Status</th>
                     <th style="background-color: #d9d9d9;">Total Item</th>
@@ -39,7 +39,7 @@
                     <th style="background-color: #d9d9d9;">Nomor Inventaris</th>
                     <th style="background-color: #d9d9d9;">Nama Barang</th>
                     <th style="background-color: #d9d9d9;">Kategori</th>
-                    <th style="background-color: #d9d9d9;">Kampus</th>
+                    <th style="background-color: #d9d9d9;">Gedung</th>
                     <th style="background-color: #d9d9d9;">Lokasi</th>
                     <th style="background-color: #d9d9d9;">Status</th>
                     <th style="background-color: #d9d9d9;">PIC</th>

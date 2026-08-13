@@ -116,27 +116,45 @@ class AssetResource extends Resource
                     \Filament\Schemas\Components\Section::make('Lokasi')
                         ->schema([
                             Components\Select::make('campus_id')
-                                ->label('Kampus')
+                                ->label('Gedung (Kampus)')
                                 ->relationship('campus', 'name')
                                 ->searchable()
                                 ->preload()
+                                ->live()
+                                ->required()
+                                ->afterStateUpdated(fn (callable $set) => $set('location_id', null))
                                 ->createOptionForm([
                                     Components\TextInput::make('name')
-                                        ->label('Nama Kampus')
+                                        ->label('Nama Gedung')
                                         ->required(),
                                     Components\Textarea::make('address')
                                         ->label('Alamat'),
                                 ]),
                             Components\Select::make('location_id')
                                 ->label('Lokasi Detail')
-                                ->relationship('location', 'name')
+                                ->relationship(
+                                    name: 'location',
+                                    titleAttribute: 'name',
+                                    modifyQueryUsing: fn (Builder $query, callable $get) => $get('campus_id')
+                                        ? $query->where('campus_id', $get('campus_id'))
+                                        : $query->whereRaw('1 = 0')
+                                )
                                 ->searchable()
                                 ->preload()
+                                ->required()
+                                ->disabled(fn (callable $get) => blank($get('campus_id')))
+                                ->placeholder(fn (callable $get) => blank($get('campus_id')) 
+                                    ? 'Pilih gedung terlebih dahulu' 
+                                    : 'Pilih lokasi detail...')
+                                ->helperText(fn (callable $get) => blank($get('campus_id'))
+                                    ? 'Pilih gedung terlebih dahulu untuk memilih lokasi detail.'
+                                    : null)
                                 ->createOptionForm([
                                     Components\Select::make('campus_id')
-                                        ->label('Kampus')
+                                        ->label('Gedung')
                                         ->relationship('campus', 'name')
-                                        ->required(),
+                                        ->required()
+                                        ->default(fn (callable $get) => $get('../../campus_id')),
                                     Components\TextInput::make('name')
                                         ->label('Nama Lokasi')
                                         ->required(),
@@ -321,6 +339,7 @@ class AssetResource extends Resource
                 \Filament\Actions\Action::make('printLabel')
                     ->label('Cetak Barcode')
                     ->hiddenLabel()
+                    ->tooltip('Cetak Barcode')
                     ->icon('heroicon-o-bars-4')
                     ->color('success')
                     ->modalHeading('Preview Label Aset')
@@ -338,6 +357,7 @@ class AssetResource extends Resource
                 \Filament\Actions\Action::make('changeStatus')
                     ->label('Ubah Status')
                     ->hiddenLabel()
+                    ->tooltip('Update Status')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->visible(fn (?Asset $record) => Auth::user()->hasPermissionTo('status.update') && ($record ? !$record->trashed() : true))
@@ -417,17 +437,22 @@ class AssetResource extends Resource
                         }
                     }),
                 \Filament\Actions\ViewAction::make()
-                    ->hiddenLabel(),
+                    ->hiddenLabel()
+                    ->tooltip('Lihat Detail'),
                 \Filament\Actions\EditAction::make()
-                    ->hiddenLabel(),
+                    ->hiddenLabel()
+                    ->tooltip('Edit Barang'),
                 \Filament\Actions\DeleteAction::make()
                     ->hiddenLabel()
+                    ->tooltip('Hapus Barang')
                     ->modalHeading('Hapus Aset (Soft Delete)')
                     ->modalDescription('Aset akan dihapus dari daftar aktif, tetapi histori tetap tersimpan.'),
                 \Filament\Actions\ForceDeleteAction::make()
-                    ->hiddenLabel(),
+                    ->hiddenLabel()
+                    ->tooltip('Hapus Permanen'),
                 \Filament\Actions\RestoreAction::make()
-                    ->hiddenLabel(),
+                    ->hiddenLabel()
+                    ->tooltip('Pulihkan Barang'),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([

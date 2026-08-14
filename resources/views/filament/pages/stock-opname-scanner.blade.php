@@ -359,7 +359,7 @@
                                 <div style="font-size: 0.875rem;">{{ $scannedAsset->name }}</div>
                                 
                                 <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">
-                                    Lokasi sistem: <strong>{{ $scannedAsset->location?->name ?? '-' }}</strong><br>
+                                    Lokasi sistem: <strong>{{ $scannedAsset->campus?->name ?? '-' }} &rarr; {{ $scannedAsset->location?->name ?? '-' }}</strong><br>
                                     Status sistem: <strong>{{ $scannedAsset->status }}</strong>
                                 </div>
                             </div>
@@ -400,12 +400,23 @@
 
                             <div>
                                 <div class="so-info-label" style="margin-bottom: 0.5rem;">Lokasi Aktual</div>
-                                <select wire:model="actual_location_id" style="width: 100%; border: 1px solid var(--fi-border); border-radius: 0.5rem; background: var(--fi-bg); font-size: 0.875rem; padding: 0.5rem;">
-                                    <option value="">▼ Pilih jika lokasi berbeda</option>
-                                    @foreach(\App\Models\Location::all() as $loc)
-                                        <option value="{{ $loc->id }}">{{ $loc->name }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="so-flex-col-gap" style="gap: 0.5rem;">
+                                    <select wire:model.live="actual_campus_id" style="width: 100%; border: 1px solid var(--fi-border); border-radius: 0.5rem; background: var(--fi-bg); font-size: 0.875rem; padding: 0.5rem;">
+                                        <option value="">▼ Pilih Gedung</option>
+                                        @foreach(\App\Models\Campus::all() as $campus)
+                                            <option value="{{ $campus->id }}">{{ $campus->name }}</option>
+                                        @endforeach
+                                    </select>
+
+                                    <select wire:model="actual_location_id" {{ !$actual_campus_id ? 'disabled' : '' }} style="width: 100%; border: 1px solid var(--fi-border); border-radius: 0.5rem; background: {{ !$actual_campus_id ? 'var(--fi-border)' : 'var(--fi-bg)' }}; font-size: 0.875rem; padding: 0.5rem; opacity: {{ !$actual_campus_id ? '0.6' : '1' }};">
+                                        <option value="">▼ Pilih Ruangan</option>
+                                        @if($actual_campus_id)
+                                            @foreach(\App\Models\Location::where('campus_id', $actual_campus_id)->get() as $loc)
+                                                <option value="{{ $loc->id }}">{{ $loc->name }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
                             </div>
                             @endif
 

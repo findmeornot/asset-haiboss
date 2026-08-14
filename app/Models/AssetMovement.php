@@ -20,6 +20,29 @@ class AssetMovement extends Model
         'movement_date' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (AssetMovement $movement) {
+            if ($movement->source_campus_id && $movement->source_location_id) {
+                $linkedSource = \App\Models\Location::whereKey($movement->source_location_id)
+                    ->where('campus_id', $movement->source_campus_id)
+                    ->exists();
+                if (! $linkedSource) {
+                    throw new \InvalidArgumentException('Lokasi asal tidak berada di Gedung asal yang sesuai.');
+                }
+            }
+
+            if ($movement->destination_campus_id && $movement->destination_location_id) {
+                $linkedDest = \App\Models\Location::whereKey($movement->destination_location_id)
+                    ->where('campus_id', $movement->destination_campus_id)
+                    ->exists();
+                if (! $linkedDest) {
+                    throw new \InvalidArgumentException('Lokasi tujuan tidak berada di Gedung tujuan yang sesuai.');
+                }
+            }
+        });
+    }
+
     public function asset(): BelongsTo
     {
         return $this->belongsTo(Asset::class);

@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Storage;
 class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRouteUlid;
 
     public function getFilamentAvatarUrl(): ?string
     {

@@ -26,12 +26,12 @@ class LocationResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'Location';
+        return 'Ruangan';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Locations';
+        return 'Ruangan';
     }
 
     

@@ -64,12 +64,15 @@ class AssetMovementResource extends Resource
                             ->relationship('destinationCampus', 'name')
                             ->searchable()
                             ->preload()
+                            ->live()
+                            ->afterStateUpdated(fn (callable $set) => $set('destination_location_id', null))
                             ->required(),
                         Components\Select::make('destination_location_id')
                             ->label('Lokasi Tujuan')
-                            ->relationship('destinationLocation', 'name')
+                            ->relationship('destinationLocation', 'name', fn ($query, $get) => $query->where('campus_id', $get('destination_campus_id')))
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->disabled(fn ($get) => blank($get('destination_campus_id'))),
                         Components\Select::make('destination_pic_id')
                             ->label('PIC Tujuan')
                             ->relationship('destinationPic', 'name')

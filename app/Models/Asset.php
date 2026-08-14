@@ -25,6 +25,15 @@ class Asset extends Model {
                     throw new \InvalidArgumentException('Kategori yang dipilih tidak terkait dengan klasifikasi yang dipilih.');
                 }
             }
+            if ($asset->campus_id && $asset->location_id) {
+                $linkedLocation = \App\Models\Location::whereKey($asset->location_id)
+                    ->where('campus_id', $asset->campus_id)
+                    ->exists();
+
+                if (! $linkedLocation) {
+                    throw new \InvalidArgumentException('Lokasi/Ruangan yang dipilih tidak berada di Gedung yang sesuai.');
+                }
+            }
         });
 
         static::forceDeleting(function (Asset $asset) {

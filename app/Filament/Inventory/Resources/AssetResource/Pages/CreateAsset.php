@@ -33,4 +33,9 @@ class CreateAsset extends CreateRecord
             $this->record->purchase()->create($this->purchaseData);
         }
     }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

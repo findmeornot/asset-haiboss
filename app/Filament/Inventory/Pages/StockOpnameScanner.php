@@ -30,6 +30,7 @@ class StockOpnameScanner extends Page
     public $checkedAssets = 0;
     
     public $condition = 'active';
+    public $actual_campus_id = null;
     public $actual_location_id = null;
     public $notes = '';
     public $is_found = true;
@@ -50,6 +51,11 @@ class StockOpnameScanner extends Page
             $this->totalAssets = \App\Models\StockOpnameItem::where('stock_opname_id', $this->opname->id)->count();
             $this->checkedAssets = \App\Models\StockOpnameItem::where('stock_opname_id', $this->opname->id)->whereNotNull('checked_at')->count();
         }
+    }
+
+    public function updatedActualCampusId($value)
+    {
+        $this->actual_location_id = null;
     }
 
     public function handleScanResult($inventoryNumber)
@@ -93,6 +99,7 @@ class StockOpnameScanner extends Page
             } else {
                 // Ready to check
                 $this->scannedAsset = $asset;
+                $this->actual_campus_id = $asset->campus_id;
                 $this->actual_location_id = $asset->location_id;
                 $this->condition = $asset->status;
                 $this->is_found = true;
@@ -145,6 +152,7 @@ class StockOpnameScanner extends Page
     {
         if ($this->alreadyVerifiedItem) {
             $this->scannedAsset = $this->alreadyVerifiedItem->asset;
+            $this->actual_campus_id = $this->alreadyVerifiedItem->actualLocation?->campus_id;
             $this->actual_location_id = $this->alreadyVerifiedItem->actual_location_id;
             $this->condition = $this->alreadyVerifiedItem->condition;
             $this->is_found = $this->alreadyVerifiedItem->is_found;
@@ -162,6 +170,7 @@ class StockOpnameScanner extends Page
         $this->alreadyVerifiedItem = null;
         $this->is_found = true;
         $this->condition = 'active';
+        $this->actual_campus_id = null;
         $this->actual_location_id = null;
         $this->notes = '';
     }

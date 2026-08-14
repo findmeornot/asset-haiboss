@@ -197,7 +197,7 @@ class AssetMovementResource extends Resource
                     ->icon('heroicon-o-printer')
                     ->color('gray')
                     ->visible(fn (AssetMovement $record) => $record->status === 'completed')
-                    ->url(fn (AssetMovement $record) => route('asset.movement.ba', $record->id))
+                    ->url(fn (AssetMovement $record) => route('asset.movement.ba', $record))
                     ->openUrlInNewTab(),
                 \Filament\Actions\EditAction::make()
                     ->visible(fn (AssetMovement $record) => $record->status === 'pending'),

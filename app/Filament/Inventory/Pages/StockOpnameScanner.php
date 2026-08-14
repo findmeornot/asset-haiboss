@@ -40,7 +40,7 @@ class StockOpnameScanner extends Page
         if (!$opnameId) {
             abort(404);
         }
-        $this->opname = StockOpname::findOrFail($opnameId);
+        $this->opname = StockOpname::where('ulid', $opnameId)->firstOrFail();
         $this->updateStats();
     }
     

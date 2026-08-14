@@ -145,7 +145,7 @@ class StockOpnameResource extends Resource
                     ->icon('heroicon-o-bars-4')
                     ->color('primary')
                     ->visible(fn (StockOpname $record) => $record->status === 'in_progress')
-                    ->url(fn (StockOpname $record) => route('filament.inventory.pages.stock-opname-scanner', ['opname' => $record->id])),
+                    ->url(fn (StockOpname $record) => route('filament.inventory.pages.stock-opname-scanner', ['opname' => $record->ulid])),
                 \Filament\Actions\Action::make('complete')
                     ->label('Selesaikan')
                     ->icon('heroicon-o-check-circle')

@@ -12,15 +12,13 @@ Route::get('/', function () {
     return redirect('admin');
 });
 
-Route::get('/asset/{id}/print-label', function ($id) {
+Route::get('/asset/{asset}/print-label', function (Asset $asset) {
     abort_unless(Auth::check(), 403);
-    $asset = Asset::findOrFail($id);
     return view('asset-label-print', compact('asset'));
 })->name('asset.label.print')->middleware('auth');
 
-Route::get('/movement/{id}/berita-acara', function ($id, BeritaAcaraService $baService) {
+Route::get('/movement/{movement}/berita-acara', function (AssetMovement $movement, BeritaAcaraService $baService) {
     abort_unless(Auth::check(), 403);
-    $movement = AssetMovement::findOrFail($id);
     abort_unless($movement->status === 'completed', 404, 'Mutasi belum selesai.');
     return $baService->generateForMovement($movement);
 })->name('asset.movement.ba')->middleware('auth');

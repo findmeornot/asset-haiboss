@@ -26,12 +26,12 @@ class CampusResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'Campus';
+        return 'Gedung';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Campuses';
+        return 'Gedung';
     }
 
     

@@ -1,10 +1,13 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasRouteUlid;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Category extends Model {
+    use HasRouteUlid;
+
     use SoftDeletes;
     protected $guarded = [];
 

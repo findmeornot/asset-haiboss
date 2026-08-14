@@ -336,8 +336,12 @@ class AssetResource extends Resource
                     ->label('Status')
                     ->badge()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('campus.name')
+                    ->label('Gedung')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('location.name')
-                    ->label('Lokasi')
+                    ->label('Ruangan (Lokasi)')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('pic.name')
                     ->label('PIC')
@@ -353,9 +357,45 @@ class AssetResource extends Resource
                 Tables\Filters\SelectFilter::make('category_id')
                     ->label('Kategori')
                     ->relationship('category', 'name'),
-                Tables\Filters\SelectFilter::make('location_id')
-                    ->label('Lokasi')
-                    ->relationship('location', 'name'),
+                Tables\Filters\Filter::make('campus_location')
+                    ->form([
+                        Components\Select::make('campus_id')
+                            ->label('Gedung')
+                            ->options(\App\Models\Campus::pluck('name', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->afterStateUpdated(fn (callable $set) => $set('location_id', null)),
+                        Components\Select::make('location_id')
+                            ->label('Ruangan (Lokasi)')
+                            ->options(fn (callable $get) => \App\Models\Location::when($get('campus_id'), fn($q) => $q->where('campus_id', $get('campus_id')))->pluck('name', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->disabled(fn (callable $get) => blank($get('campus_id'))),
+                    ])
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
+                        return $query
+                            ->when(
+                                $data['campus_id'],
+                                fn (\Illuminate\Database\Eloquent\Builder $query, $campusId): \Illuminate\Database\Eloquent\Builder => $query->where('campus_id', $campusId),
+                            )
+                            ->when(
+                                $data['location_id'],
+                                fn (\Illuminate\Database\Eloquent\Builder $query, $locationId): \Illuminate\Database\Eloquent\Builder => $query->where('location_id', $locationId),
+                            );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['campus_id'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Gedung: ' . \App\Models\Campus::find($data['campus_id'])?->name)
+                                ->removeField('campus_id');
+                        }
+                        if ($data['location_id'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Ruangan: ' . \App\Models\Location::find($data['location_id'])?->name)
+                                ->removeField('location_id');
+                        }
+                        return $indicators;
+                    }),
                 Tables\Filters\SelectFilter::make('pic_id')
                     ->label('PIC')
                     ->relationship('pic', 'name'),

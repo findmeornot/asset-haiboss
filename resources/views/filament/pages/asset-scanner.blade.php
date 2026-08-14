@@ -305,7 +305,7 @@
                             </div>
                             <div class="flex items-start">
                                 <span class="w-24 shrink-0 text-gray-500">Lokasi</span>
-                                <span class="font-medium text-gray-900 dark:text-white">{{ $scannedAsset->location?->name ?? '-' }}</span>
+                                <span class="font-medium text-gray-900 dark:text-white">{!! $scannedAsset->campus ? $scannedAsset->campus->name . ' &rarr; ' : '' !!}{{ $scannedAsset->location?->name ?? '-' }}</span>
                             </div>
                             <div class="flex items-start">
                                 <span class="w-24 shrink-0 text-gray-500">PIC</span>

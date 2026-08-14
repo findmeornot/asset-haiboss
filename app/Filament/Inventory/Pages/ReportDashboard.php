@@ -78,10 +78,13 @@ class ReportDashboard extends Page implements HasForms
                             ->schema([
                                 Components\Select::make('campus_id')
                                     ->label('Gedung')
-                                    ->options(\App\Models\Campus::pluck('name', 'id')),
+                                    ->options(\App\Models\Campus::pluck('name', 'id'))
+                                    ->live()
+                                    ->afterStateUpdated(fn (callable $set) => $set('location_id', null)),
                                 Components\Select::make('location_id')
-                                    ->label('Lokasi')
-                                    ->options(\App\Models\Location::pluck('name', 'id')),
+                                    ->label('Ruangan (Lokasi)')
+                                    ->options(fn (callable $get) => \App\Models\Location::when($get('campus_id'), fn($q) => $q->where('campus_id', $get('campus_id')))->pluck('name', 'id'))
+                                    ->disabled(fn (callable $get) => blank($get('campus_id'))),
                                 Components\Select::make('category_id')
                                     ->label('Kategori')
                                     ->options(\App\Models\Category::pluck('name', 'id')),

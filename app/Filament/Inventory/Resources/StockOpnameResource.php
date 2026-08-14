@@ -46,12 +46,15 @@ class StockOpnameResource extends Resource
                             ->relationship('campus', 'name')
                             ->searchable()
                             ->preload()
+                            ->live()
+                            ->afterStateUpdated(fn (callable $set) => $set('location_id', null))
                             ->required(),
                         Components\Select::make('location_id')
                             ->label('Lokasi Spesifik (Opsional)')
-                            ->relationship('location', 'name')
+                            ->relationship('location', 'name', fn ($query, $get) => $query->where('campus_id', $get('campus_id')))
                             ->searchable()
-                            ->preload(),
+                            ->preload()
+                            ->disabled(fn ($get) => blank($get('campus_id'))),
                         Components\DatePicker::make('start_date')
                             ->label('Tanggal Mulai')
                             ->required()
@@ -145,7 +148,7 @@ class StockOpnameResource extends Resource
                     ->icon('heroicon-o-bars-4')
                     ->color('primary')
                     ->visible(fn (StockOpname $record) => $record->status === 'in_progress')
-                    ->url(fn (StockOpname $record) => route('filament.inventory.pages.stock-opname-scanner', ['opname' => $record->id])),
+                    ->url(fn (StockOpname $record) => route('filament.inventory.pages.stock-opname-scanner', ['opname' => $record->ulid])),
                 \Filament\Actions\Action::make('complete')
                     ->label('Selesaikan')
                     ->icon('heroicon-o-check-circle')

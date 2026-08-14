@@ -5,4 +5,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateStockOpname extends CreateRecord
 {
     protected static string $resource = StockOpnameResource::class;
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }

@@ -1,11 +1,14 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\HasRouteUlid;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 class Asset extends Model {
+    use HasRouteUlid;
+
     use SoftDeletes;
     protected $guarded = [];
 
@@ -20,6 +23,15 @@ class Asset extends Model {
 
                 if (! $linked) {
                     throw new \InvalidArgumentException('Kategori yang dipilih tidak terkait dengan klasifikasi yang dipilih.');
+                }
+            }
+            if ($asset->campus_id && $asset->location_id) {
+                $linkedLocation = \App\Models\Location::whereKey($asset->location_id)
+                    ->where('campus_id', $asset->campus_id)
+                    ->exists();
+
+                if (! $linkedLocation) {
+                    throw new \InvalidArgumentException('Lokasi/Ruangan yang dipilih tidak berada di Gedung yang sesuai.');
                 }
             }
         });

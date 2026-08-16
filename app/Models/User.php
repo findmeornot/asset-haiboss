@@ -80,6 +80,20 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
 
     public function canAccessPanel(Panel $panel): bool
     {
+        // KODE LAMA (dijadikan komentar):
+        // $permission = self::PANEL_PERMISSIONS[$panel->getId()] ?? null;
+        // if ($permission === null) {
+        //     return false;
+        // }
+        // return $this->hasPermissionTo($permission);
+
+        // KODE BARU:
+        // Agar Superadmin tidak melihat pemisahan panel (switcher), kita blokir aksesnya ke panel 'inventory'.
+        // Karena menu inventaris sudah disatukan ke panel 'admin', Superadmin cukup pakai panel admin saja.
+        if ($this->hasRole('Superadmin') && $panel->getId() === 'inventory') {
+            return false;
+        }
+
         $permission = self::PANEL_PERMISSIONS[$panel->getId()] ?? null;
 
         if ($permission === null) {

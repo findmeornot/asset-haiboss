@@ -26,8 +26,15 @@ abstract class BaseCategoryAssetResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        $slug = match (static::$categoryType) {
+            'asset' => 'aset',
+            'inventory' => 'inventaris',
+            'supply' => 'persediaan-barang',
+            default => static::$categoryType,
+        };
+
         return parent::getEloquentQuery()
-            ->whereHas('category', fn (Builder $q) => $q->where('type', static::$categoryType));
+            ->whereHas('classification', fn (Builder $q) => $q->where('slug', $slug));
     }
 
     public static function getNavigationGroup(): string|\UnitEnum|null
@@ -120,7 +127,15 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->relationship(
                         'category',
                         'name',
-                        fn (Builder $query) => $query->where('type', static::$categoryType)
+                        function (Builder $query) {
+                            $slug = match (static::$categoryType) {
+                                'asset' => 'aset',
+                                'inventory' => 'inventaris',
+                                'supply' => 'persediaan-barang',
+                                default => static::$categoryType,
+                            };
+                            return $query->whereHas('classifications', fn($q) => $q->where('slug', $slug));
+                        }
                     ),
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Status')

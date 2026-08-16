@@ -51,7 +51,7 @@ class RolePermissionSeeder extends Seeder
             'Superadmin' => [], // Bypass via User model
             
             'Tim Inventaris' => [
-                'panel.admin', 'panel.inventory',
+                'panel.inventory',
                 'assets.view', 'assets.create', 'assets.update',
                 'categories.view', 'categories.create', 'categories.update',
                 'campuses.view', 'campuses.create', 'campuses.update',
@@ -73,7 +73,7 @@ class RolePermissionSeeder extends Seeder
             ],
 
             'Approver' => [
-                'panel.admin', 'panel.inventory',
+                'panel.inventory',
                 'assets.view',
                 'movements.view', 'movements.approve', 'movements.reject', 'movements.complete',
                 'status.view', 'status.approve',

@@ -47,8 +47,8 @@ class AppServiceProvider extends ServiceProvider
                         return [];
                     }
 
-                    return collect(User::PANEL_PERMISSIONS)
-                        ->filter(fn (string $permission) => $user->hasPermissionTo($permission))
+                    return collect(\Filament\Facades\Filament::getPanels())
+                        ->filter(fn ($panel) => $user->canAccessPanel($panel))
                         ->keys()
                         ->values()
                         ->all();

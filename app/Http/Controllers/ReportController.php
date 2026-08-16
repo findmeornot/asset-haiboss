@@ -30,7 +30,7 @@ class ReportController extends Controller
         } elseif ($type === 'stock_opname') {
             $query = StockOpname::with(['campus', 'location', 'items']);
         } else {
-            $query = Asset::with(['category', 'campus', 'location', 'pic', 'purchase']);
+            $query = Asset::with(['classification', 'category', 'campus', 'location', 'pic', 'purchase']);
             
             // Apply specific filters based on report type
             if ($type === 'damaged') {

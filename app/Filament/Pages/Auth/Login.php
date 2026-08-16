@@ -67,12 +67,6 @@ class Login extends AuthLogin
     }
 
     /**
-     * Urutan prioritas panel tujuan redirect setelah login, dipakai saat user
-     * punya akses ke lebih dari satu panel: inventory didahulukan dari admin.
-     */
-    protected const PANEL_REDIRECT_PRIORITY = ['inventory', 'admin'];
-
-    /**
      * Override authenticate: verifikasi Turnstile dulu, lalu login tanpa
      * dibatasi ke panel tempat form login dibuka (beda dari default Filament
      * yang menolak login jika user tidak punya akses ke panel saat ini).
@@ -131,23 +125,38 @@ class Login extends AuthLogin
     }
 
     /**
-     * Cari panel pertama (sesuai urutan prioritas) yang bisa diakses user.
+     * Tentukan panel tujuan berdasarkan Role user.
      */
     protected function resolveAccessiblePanel(Authenticatable $user): ?Panel
     {
-        if (! ($user instanceof FilamentUser)) {
+        if (! ($user instanceof \App\Models\User)) {
             return Filament::getCurrentOrDefaultPanel();
         }
 
-        foreach (self::PANEL_REDIRECT_PRIORITY as $panelId) {
-            $panel = Filament::getPanel($panelId, isStrict: false);
-
+        // 1. Superadmin -> Admin Panel
+        if ($user->hasRole('Superadmin')) {
+            $panel = Filament::getPanel('admin', isStrict: false);
             if ($panel && $user->canAccessPanel($panel)) {
                 return $panel;
             }
         }
 
-        return null;
+        // 2. Tim Inventaris, Finance, Approver -> Inventory Panel
+        if ($user->hasRole('Tim Inventaris') || $user->hasRole('Finance') || $user->hasRole('Approver')) {
+            $panel = Filament::getPanel('inventory', isStrict: false);
+            if ($panel && $user->canAccessPanel($panel)) {
+                return $panel;
+            }
+        }
+
+        // Fallback: kembalikan panel pertama yang user punya akses
+        foreach (Filament::getPanels() as $panel) {
+            if ($user->canAccessPanel($panel)) {
+                return $panel;
+            }
+        }
+
+        return Filament::getCurrentOrDefaultPanel();
     }
 
     /**

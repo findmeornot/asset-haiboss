@@ -13,4 +13,13 @@ class ListInventoryCategory extends ListRecords
     {
         return [];
     }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Inventory\Resources\Widgets\CategoryAssetStatsWidget::make([
+                'categorySlug' => 'inventaris',
+            ]),
+        ];
+    }
 }

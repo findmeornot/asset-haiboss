@@ -24,6 +24,27 @@ class CreateAsset extends CreateRecord
             unset($data['purchase_data']);
         }
 
+        // Handle Tahun Perolehan & Harga Perolehan kosong
+        $tahunUnknown = empty($this->purchaseData['purchase_date']);
+        $hargaUnknown = empty($this->purchaseData['unit_price']);
+
+        $unknownInfo = array_filter([
+            $tahunUnknown ? 'tahun perolehan tidak diketahui' : null,
+            $hargaUnknown ? 'harga perolehan tidak diketahui' : null,
+        ]);
+
+        if (!empty($unknownInfo)) {
+            $suffix = '(' . implode(', ', $unknownInfo) . ')';
+            $existingNotes = trim($data['notes'] ?? '');
+
+            // Only append if it's not already in the notes
+            if ($existingNotes === '') {
+                $data['notes'] = $suffix;
+            } elseif (!str_contains($existingNotes, $suffix)) {
+                $data['notes'] = $existingNotes . ' ' . $suffix;
+            }
+        }
+
         return $data;
     }
 

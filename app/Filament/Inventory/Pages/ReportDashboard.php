@@ -82,18 +82,18 @@ class ReportDashboard extends Page implements HasForms
                                     ->live()
                                     ->afterStateUpdated(fn (callable $set) => $set('location_id', null)),
                                 Components\Select::make('location_id')
-                                    ->label('Ruangan (Lokasi)')
+                                    ->label('Ruangan')
                                     ->options(fn (callable $get) => \App\Models\Location::when($get('campus_id'), fn($q) => $q->where('campus_id', $get('campus_id')))->pluck('name', 'id'))
                                     ->disabled(fn (callable $get) => blank($get('campus_id'))),
                                 Components\Select::make('category_id')
                                     ->label('Kategori')
                                     ->options(\App\Models\Category::pluck('name', 'id')),
                                 Components\Select::make('ownership')
-                                    ->label('Kepemilikan')
+                                    ->label('Sumber Dana')
                                     ->options([
-                                        'company' => 'Perusahaan',
-                                        'grant' => 'Hibah',
-                                        'loan' => 'Pinjaman',
+                                        'company' => 'Yayasan',
+                                        'grant'   => 'Hibah',
+                                        'loan'    => 'Pinjaman',
                                     ]),
                                 Components\TextInput::make('year')
                                     ->label('Tahun Pembelian')

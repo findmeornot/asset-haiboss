@@ -13,6 +13,6 @@ class PanelPriorityLoginResponse implements LoginResponseContract
 
     public function toResponse($request): RedirectResponse | Redirector
     {
-        return redirect()->intended($this->panel->getUrl());
+        return redirect()->to($this->panel->getUrl());
     }
 }

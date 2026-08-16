@@ -7,6 +7,7 @@ use App\Models\Asset;
 use App\Models\AssetMovement;
 use App\Services\BeritaAcaraService;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\AssetImportTemplateController;
 
 Route::get('/', function () {
     return redirect('admin');
@@ -27,21 +28,6 @@ Route::get('/report/export', [ReportController::class, 'exportExcel'])
     ->name('report.export.excel')
     ->middleware('auth');
 
-Route::get('/debug-session', function (Request $request) {
-    return response()->json([
-        'scheme' => $request->getScheme(),
-        'secure' => $request->isSecure(),
-        'host' => $request->getHost(),
-        'url' => $request->fullUrl(),
-        'session_id' => $request->session()->getId(),
-        'csrf_token' => $request->session()->token(),
-        'session_cookie' => config('session.cookie'),
-    ]);
-});
-
-Route::post('/debug-post', function (\Illuminate\Http\Request $request) {
-    return response()->json([
-        'ok' => true,
-        'session' => $request->session()->all(),
-    ]);
-});
+Route::get('/asset/import/template', [AssetImportTemplateController::class, 'downloadCsv'])
+    ->name('asset.import.template')
+    ->middleware('auth');

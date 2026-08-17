@@ -25,13 +25,16 @@ class DepreciationService
         $residualValue = '0'; // Configurable if needed
         $startYearOffset = 1; // "Penyusutan dimulai pada tahun berikutnya"
 
+        $costFloat = (float) $cost;
+        $residualValueFloat = (float) $residualValue;
+
         // Handle empty or zero
-        if (bccomp($cost, '0', 2) <= 0 || !$purchaseDate || $usefulLife <= 0) {
+        if ($costFloat <= 0 || !$purchaseDate || $usefulLife <= 0) {
             return [
-                'acquisition_cost' => $cost,
-                'book_value' => $cost,
-                'accumulated_depreciation' => '0',
-                'annual_depreciation' => '0',
+                'acquisition_cost' => number_format($costFloat, 2, '.', ''),
+                'book_value' => number_format($costFloat, 2, '.', ''),
+                'accumulated_depreciation' => '0.00',
+                'annual_depreciation' => '0.00',
                 'useful_life' => $usefulLife,
                 'remaining_useful_life' => $usefulLife,
                 'is_depreciable' => false,
@@ -43,10 +46,10 @@ class DepreciationService
         $currentYear = now()->year;
 
         // Calculate Depreciable Amount
-        $depreciableAmount = bcsub($cost, $residualValue, 2);
+        $depreciableAmount = $costFloat - $residualValueFloat;
         
         // Annual Depreciation = Depreciable Amount / Useful Life
-        $annualDepreciation = bcdiv($depreciableAmount, (string) $usefulLife, 2);
+        $annualDepreciation = $depreciableAmount / $usefulLife;
         
         // Calculate elapsed years for depreciation
         $startYear = $purchaseYear + $startYearOffset;
@@ -62,27 +65,27 @@ class DepreciationService
         }
 
         // Accumulated Depreciation = elapsed * annual
-        $accumulatedDepreciation = bcmul($annualDepreciation, (string) $elapsedYears, 2);
+        $accumulatedDepreciation = $annualDepreciation * $elapsedYears;
 
         // Ensure accumulated depreciation does not exceed depreciable amount due to rounding
-        if (bccomp($accumulatedDepreciation, $depreciableAmount, 2) > 0) {
+        if ($accumulatedDepreciation > $depreciableAmount) {
             $accumulatedDepreciation = $depreciableAmount;
         }
 
-        $bookValue = bcsub($cost, $accumulatedDepreciation, 2);
+        $bookValue = $costFloat - $accumulatedDepreciation;
         
         // Ensure book value doesn't drop below residual value
-        if (bccomp($bookValue, $residualValue, 2) < 0) {
-            $bookValue = $residualValue;
+        if ($bookValue < $residualValueFloat) {
+            $bookValue = $residualValueFloat;
         }
 
         $remainingUsefulLife = max(0, $usefulLife - $elapsedYears);
 
         return [
-            'acquisition_cost' => $cost,
-            'book_value' => $bookValue,
-            'accumulated_depreciation' => $accumulatedDepreciation,
-            'annual_depreciation' => $annualDepreciation,
+            'acquisition_cost' => number_format($costFloat, 2, '.', ''),
+            'book_value' => number_format($bookValue, 2, '.', ''),
+            'accumulated_depreciation' => number_format($accumulatedDepreciation, 2, '.', ''),
+            'annual_depreciation' => number_format($annualDepreciation, 2, '.', ''),
             'useful_life' => $usefulLife,
             'remaining_useful_life' => $remainingUsefulLife,
             'is_depreciable' => true,

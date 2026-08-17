@@ -8,12 +8,12 @@ use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
 use App\Models\User;
 use App\Services\BarcodeService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Tests\TestCase;
 
 class BarcodeSystemTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTruncation;
 
     public function test_barcode_generation()
     {
@@ -49,8 +49,9 @@ class BarcodeSystemTest extends TestCase
     public function test_asset_outside_stock_opname()
     {
         $campus = Campus::factory()->create();
-        $asset1 = Asset::factory()->create(['campus_id' => $campus->id, 'inventory_number' => 'INV-001']);
-        $asset2 = Asset::factory()->create(['campus_id' => $campus->id, 'inventory_number' => 'INV-002']);
+        $location = \App\Models\Location::factory()->create(['campus_id' => $campus->id]);
+        $asset1 = Asset::factory()->create(['campus_id' => $campus->id, 'location_id' => $location->id, 'inventory_number' => 'INV-001']);
+        $asset2 = Asset::factory()->create(['campus_id' => $campus->id, 'location_id' => $location->id, 'inventory_number' => 'INV-002']);
 
         $opname = StockOpname::factory()->create(['status' => 'in_progress', 'campus_id' => $campus->id]);
         

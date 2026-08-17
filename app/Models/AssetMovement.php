@@ -22,6 +22,28 @@ class AssetMovement extends Model
 
     protected static function booted(): void
     {
+        static::created(function (AssetMovement $movement) {
+            \App\Services\AuditLogger::log(\App\Enums\AuditAction::MUTATION_CREATED, $movement, null, $movement->toArray());
+        });
+
+        static::updated(function (AssetMovement $movement) {
+            $changes = $movement->getChanges();
+            $original = array_intersect_key($movement->getOriginal(), $changes);
+            
+            $action = \App\Enums\AuditAction::MUTATION_UPDATED;
+            if ($movement->wasChanged('status')) {
+                if ($movement->status === 'approved') {
+                    $action = \App\Enums\AuditAction::MUTATION_APPROVED;
+                } elseif ($movement->status === 'rejected') {
+                    $action = \App\Enums\AuditAction::MUTATION_REJECTED;
+                } elseif ($movement->status === 'completed') {
+                    $action = \App\Enums\AuditAction::MUTATION_COMPLETED;
+                }
+            }
+
+            \App\Services\AuditLogger::log($action, $movement, $original, $changes);
+        });
+
         static::saving(function (AssetMovement $movement) {
             if ($movement->source_campus_id && $movement->source_location_id) {
                 $linkedSource = \App\Models\Location::whereKey($movement->source_location_id)

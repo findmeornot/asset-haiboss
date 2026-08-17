@@ -83,6 +83,17 @@ class ApprovalRequestResource extends Resource
                                 ]);
                                 
                                 $payload = json_decode($lockedRecord->payload, true);
+
+                                $parentAudit = \App\Services\AuditLogger::log(
+                                    action: \App\Enums\AuditAction::MUTATION_APPROVED,
+                                    model: $lockedRecord,
+                                    old: ['status' => 'pending'],
+                                    new: ['status' => 'approved'],
+                                    metadata: ['payload' => $payload]
+                                );
+
+                                \App\Services\AuditLogger::$currentParentId = $parentAudit->id;
+
                                 if ($lockedRecord->request_type === 'status_change' && isset($payload['asset_id']) && isset($payload['new_status'])) {
                                     $asset = Asset::where('id', $payload['asset_id'])->lockForUpdate()->first();
                                     if ($asset) {
@@ -91,13 +102,7 @@ class ApprovalRequestResource extends Resource
                                     }
                                 }
 
-                                \App\Services\AuditLogger::log(
-                                    action: \App\Enums\AuditAction::MUTATION_APPROVED,
-                                    model: $lockedRecord,
-                                    old: ['status' => 'pending'],
-                                    new: ['status' => 'approved'],
-                                    metadata: ['payload' => $payload]
-                                );
+                                \App\Services\AuditLogger::$currentParentId = null;
                             });
                             \Filament\Notifications\Notification::make()->title('Pengajuan Disetujui')->success()->send();
                         } catch (\Exception $e) {

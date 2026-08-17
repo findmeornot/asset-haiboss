@@ -22,10 +22,6 @@ class AssetMovement extends Model
 
     protected static function booted(): void
     {
-        static::created(function (AssetMovement $movement) {
-            \App\Services\AuditLogger::log(\App\Enums\AuditAction::MUTATION_CREATED, $movement, null, $movement->toArray());
-        });
-
         static::updated(function (AssetMovement $movement) {
             $changes = $movement->getChanges();
             $original = array_intersect_key($movement->getOriginal(), $changes);
@@ -41,7 +37,44 @@ class AssetMovement extends Model
                 }
             }
 
-            \App\Services\AuditLogger::log($action, $movement, $original, $changes);
+            $metadata = [
+                'snapshot' => [
+                    'asset_name' => $movement->asset->name ?? null,
+                    'inventory_number' => $movement->asset->inventory_number ?? null,
+                    'sku' => $movement->asset->sku ?? null,
+                    'source_location' => $movement->sourceLocation->name ?? null,
+                    'destination_location' => $movement->destinationLocation->name ?? null,
+                    'source_pic' => $movement->sourcePic->name ?? null,
+                    'destination_pic' => $movement->destinationPic->name ?? null,
+                    'requester' => $movement->requestedBy->name ?? null,
+                    'approver' => $movement->approvedBy->name ?? null,
+                    'reason' => $movement->reason ?? null,
+                    'status_before' => $original['status'] ?? $movement->getOriginal('status'),
+                    'status_after' => $movement->status,
+                ]
+            ];
+
+            $reason = request()->input('reject_reason') ?? request()->input('approval_note');
+
+            \App\Services\AuditLogger::log($action, $movement, $original, $changes, $reason, null, null, $metadata);
+        });
+
+        static::created(function (AssetMovement $movement) {
+            $metadata = [
+                'snapshot' => [
+                    'asset_name' => $movement->asset->name ?? null,
+                    'inventory_number' => $movement->asset->inventory_number ?? null,
+                    'sku' => $movement->asset->sku ?? null,
+                    'source_location' => $movement->sourceLocation->name ?? null,
+                    'destination_location' => $movement->destinationLocation->name ?? null,
+                    'source_pic' => $movement->sourcePic->name ?? null,
+                    'destination_pic' => $movement->destinationPic->name ?? null,
+                    'requester' => $movement->requestedBy->name ?? null,
+                    'reason' => $movement->reason ?? null,
+                    'status' => $movement->status,
+                ]
+            ];
+            \App\Services\AuditLogger::log(\App\Enums\AuditAction::MUTATION_CREATED, $movement, null, $movement->toArray(), null, null, null, $metadata);
         });
 
         static::saving(function (AssetMovement $movement) {

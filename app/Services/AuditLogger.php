@@ -20,6 +20,11 @@ class AuditLogger
         'secret',
         'secret_key',
         'private_key',
+        'api_key',
+        'credential',
+        'authorization',
+        'cookie',
+        'session_secret',
     ];
 
     public static ?string $currentBatchUuid = null;

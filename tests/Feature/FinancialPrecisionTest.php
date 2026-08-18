@@ -7,18 +7,23 @@ use App\Models\AssetPurchase;
 use App\Models\Category;
 use App\Services\DepreciationService;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Tests\TestCase;
 
 class FinancialPrecisionTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTruncation;
 
     public function test_depreciation_with_precision_safe_values()
     {
+        $classification = \App\Models\Classification::factory()->create();
         $category = Category::factory()->create(['useful_life' => 8]);
+        $category->classifications()->attach($classification);
         
-        $asset = Asset::factory()->create(['category_id' => $category->id]);
+        $asset = Asset::factory()->create([
+            'category_id' => $category->id,
+            'classification_id' => $classification->id,
+        ]);
         
         // Simulating purchase in a specific year to test elapsed years
         // If current year is 2026, and purchased in 2024, starts 2025.
@@ -49,8 +54,14 @@ class FinancialPrecisionTest extends TestCase
 
     public function test_land_no_depreciation()
     {
+        $classification = \App\Models\Classification::factory()->create();
         $category = Category::factory()->create(['useful_life' => 0]);
-        $asset = Asset::factory()->create(['category_id' => $category->id]);
+        $category->classifications()->attach($classification);
+        
+        $asset = Asset::factory()->create([
+            'category_id' => $category->id,
+            'classification_id' => $classification->id,
+        ]);
         
         AssetPurchase::factory()->create([
             'asset_id' => $asset->id,
@@ -63,16 +74,22 @@ class FinancialPrecisionTest extends TestCase
         $financials = DepreciationService::calculate($asset);
 
         $this->assertEquals('500000000.00', $financials['acquisition_cost']);
-        $this->assertEquals('0', $financials['annual_depreciation']);
-        $this->assertEquals('0', $financials['accumulated_depreciation']);
+        $this->assertEquals('0.00', $financials['annual_depreciation']);
+        $this->assertEquals('0.00', $financials['accumulated_depreciation']);
         $this->assertEquals('500000000.00', $financials['book_value']);
         $this->assertEquals(0, $financials['remaining_useful_life']);
     }
 
     public function test_division_precision_no_drift()
     {
+        $classification = \App\Models\Classification::factory()->create();
         $category = Category::factory()->create(['useful_life' => 3]);
-        $asset = Asset::factory()->create(['category_id' => $category->id]);
+        $category->classifications()->attach($classification);
+        
+        $asset = Asset::factory()->create([
+            'category_id' => $category->id,
+            'classification_id' => $classification->id,
+        ]);
         
         AssetPurchase::factory()->create([
             'asset_id' => $asset->id,
@@ -97,8 +114,14 @@ class FinancialPrecisionTest extends TestCase
 
     public function test_fully_depreciated_asset()
     {
+        $classification = \App\Models\Classification::factory()->create();
         $category = Category::factory()->create(['useful_life' => 5]);
-        $asset = Asset::factory()->create(['category_id' => $category->id]);
+        $category->classifications()->attach($classification);
+        
+        $asset = Asset::factory()->create([
+            'category_id' => $category->id,
+            'classification_id' => $classification->id,
+        ]);
         
         // Bought 10 years ago
         AssetPurchase::factory()->create([

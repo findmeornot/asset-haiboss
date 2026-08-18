@@ -6,7 +6,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+<<<<<<< HEAD
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+
+#[ObservedBy(\App\Observers\AssetObserver::class)]
+class Asset extends Model {
+    use HasRouteUlid;
+=======
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+>>>>>>> 06b7d33ccd45b7c67f7d5e074c885723fd7e97a3
 
 class Asset extends Model {
     use HasRouteUlid, SoftDeletes, HasFactory;

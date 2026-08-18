@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Auth;
 
 class AssetObserver
 {
+    public function creating(Asset $asset): void
+    {
+        if (empty($asset->barcode)) {
+            $asset->barcode = \App\Services\BarcodeNumberGenerator::generate();
+        }
+    }
+
     public function created(Asset $asset): void
     {
         AuditLogger::log('created', $asset, null, $asset->toArray());

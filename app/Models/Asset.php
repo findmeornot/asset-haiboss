@@ -11,11 +11,6 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 
 #[ObservedBy(\App\Observers\AssetObserver::class)]
 class Asset extends Model {
-    use HasRouteUlid;
-=======
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
-class Asset extends Model {
     use HasRouteUlid, SoftDeletes, HasFactory;
     protected $guarded = [];
 

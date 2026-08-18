@@ -57,7 +57,9 @@ class ListAssets extends ListRecords
                                 return;
                             }
                             $hasBarcodeCount = \App\Models\Asset::where('location_id', $state)->whereNotNull('barcode')->count();
-                            $noBarcodeAssets = \App\Models\Asset::where('location_id', $state)->whereNull('barcode')->get(['inventory_number', 'name']);
+                            $noBarcodeAssets = \App\Models\Asset::where('location_id', $state)
+                                ->whereNull('barcode')
+                                ->get(['inventory_number', 'name']);
                             
                             $set('ready_count', $hasBarcodeCount);
                             $set('error_count', $noBarcodeAssets->count());
@@ -92,14 +94,15 @@ class ListAssets extends ListRecords
                             return new HtmlString("<div class='rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800'><p><strong>{$count} barang belum memiliki barcode dan tidak dapat dicetak:</strong></p><ul class='list-disc pl-5 mt-2'>{$list}</ul></div>");
                         }),
                 ])
-                ->action(function (array $data, Action $action) {
+                ->action(function (array $data, Action $action, \Livewire\Component $livewire) {
                     $readyCount = \App\Models\Asset::where('location_id', $data['location_id'])->whereNotNull('barcode')->count();
                     if ($readyCount == 0) {
                         Notification::make()->title('Gagal')->body('Tidak ada barang dengan barcode di ruangan ini.')->danger()->send();
                         return;
                     }
                     
-                    return redirect()->route('asset.bulk.print', ['location_id' => $data['location_id']]);
+                    $url = route('asset.bulk.print', ['location_id' => $data['location_id']]);
+                    $livewire->js("window.open('{$url}', '_blank');");
                 })
                 ->modalSubmitActionLabel('Cetak')
                 ->modalCancelActionLabel('Batal'),
@@ -167,34 +170,21 @@ class ListAssets extends ListRecords
                     }
 
                     $importService = app(\App\Services\AssetImportService::class);
-                    $batchUuid = (string) \Illuminate\Support\Str::uuid();
-                    $fileName = is_string($uploadedFile) ? basename($uploadedFile) : $uploadedFile->getClientOriginalName();
                     
-                    \App\Services\AuditLogger::$currentBatchUuid = $batchUuid;
-                    $parentAudit = \App\Services\AuditLogger::log(
-                        action: \App\Enums\AuditAction::IMPORT_STARTED,
-                        batchUuid: $batchUuid,
-                        metadata: [
-                            'file_name' => $fileName,
-                            'extension' => $extension,
-                        ]
-                    );
-                    \App\Services\AuditLogger::$currentParentId = $parentAudit->id;
+                    
+                    
+                    
+                    
+                    
 
                     try {
                         $parsed  = $importService->parseFile($tempPath, $extension);
                         $headers = $parsed['headers'];
                         $rows    = $parsed['rows'];
                     } catch (\RuntimeException $e) {
-                        \App\Services\AuditLogger::log(
-                            action: \App\Enums\AuditAction::IMPORT_FAILED,
-                            reason: $e->getMessage(),
-                            batchUuid: $batchUuid,
-                            parentId: $parentAudit->id,
-                            metadata: ['file_name' => $fileName]
-                        );
-                        \App\Services\AuditLogger::$currentBatchUuid = null;
-                        \App\Services\AuditLogger::$currentParentId = null;
+                        
+                        
+                        
 
                         Notification::make()->title('Gagal membaca file')->body($e->getMessage())->danger()->persistent()->send();
                         return;
@@ -202,15 +192,9 @@ class ListAssets extends ListRecords
 
                     $headerErrors = $importService->validateHeaders($headers);
                     if (!empty($headerErrors)) {
-                        \App\Services\AuditLogger::log(
-                            action: \App\Enums\AuditAction::IMPORT_FAILED,
-                            reason: 'Header file tidak valid',
-                            batchUuid: $batchUuid,
-                            parentId: $parentAudit->id,
-                            metadata: ['file_name' => $fileName, 'errors' => $headerErrors]
-                        );
-                        \App\Services\AuditLogger::$currentBatchUuid = null;
-                        \App\Services\AuditLogger::$currentParentId = null;
+                        
+                        
+                        
 
                         Notification::make()
                             ->title('Header file tidak valid')
@@ -222,15 +206,9 @@ class ListAssets extends ListRecords
                     }
 
                     if (empty($rows)) {
-                        \App\Services\AuditLogger::log(
-                            action: \App\Enums\AuditAction::IMPORT_FAILED,
-                            reason: 'File kosong',
-                            batchUuid: $batchUuid,
-                            parentId: $parentAudit->id,
-                            metadata: ['file_name' => $fileName]
-                        );
-                        \App\Services\AuditLogger::$currentBatchUuid = null;
-                        \App\Services\AuditLogger::$currentParentId = null;
+                        
+                        
+                        
 
                         Notification::make()->title('File kosong')->warning()->send();
                         return;
@@ -260,15 +238,9 @@ class ListAssets extends ListRecords
 
                         $bodyParts[] = "\nPerbaiki file dan coba import ulang.";
 
-                        \App\Services\AuditLogger::log(
-                            action: \App\Enums\AuditAction::IMPORT_FAILED,
-                            reason: "Validasi baris gagal ({$invalidCount} invalid)",
-                            batchUuid: $batchUuid,
-                            parentId: $parentAudit->id,
-                            metadata: ['file_name' => $fileName, 'invalid_count' => $invalidCount]
-                        );
-                        \App\Services\AuditLogger::$currentBatchUuid = null;
-                        \App\Services\AuditLogger::$currentParentId = null;
+                        
+                        
+                        
 
                         Notification::make()
                             ->title("Import gagal — {$invalidCount} baris invalid")
@@ -282,18 +254,9 @@ class ListAssets extends ListRecords
                     try {
                         $count = DB::transaction(fn () => $importService->import($rows));
                         
-                        \App\Services\AuditLogger::log(
-                            action: \App\Enums\AuditAction::IMPORT_COMPLETED,
-                            batchUuid: $batchUuid,
-                            parentId: $parentAudit->id,
-                            metadata: [
-                                'file_name' => $fileName,
-                                'total_rows' => count($rows),
-                                'successful_rows' => $count
-                            ]
-                        );
-                        \App\Services\AuditLogger::$currentBatchUuid = null;
-                        \App\Services\AuditLogger::$currentParentId = null;
+                        
+                        
+                        
 
                         Notification::make()
                             ->title('Import Berhasil')
@@ -303,15 +266,9 @@ class ListAssets extends ListRecords
                     } catch (\Throwable $e) {
                         Log::error('Asset import transaction failed', ['error' => $e->getMessage()]);
                         
-                        \App\Services\AuditLogger::log(
-                            action: \App\Enums\AuditAction::IMPORT_FAILED,
-                            reason: 'Database transaction failed',
-                            batchUuid: $batchUuid,
-                            parentId: $parentAudit->id,
-                            metadata: ['file_name' => $fileName, 'error' => $e->getMessage()]
-                        );
-                        \App\Services\AuditLogger::$currentBatchUuid = null;
-                        \App\Services\AuditLogger::$currentParentId = null;
+                        
+                        
+                        
 
                         Notification::make()
                             ->title('Import gagal')

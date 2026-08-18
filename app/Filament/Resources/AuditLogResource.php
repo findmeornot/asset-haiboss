@@ -43,8 +43,8 @@ class AuditLogResource extends Resource
                 Components\TextInput::make('auditable_id')->label('ID Modul'),
                 Components\Textarea::make('reason')->label('Alasan'),
                 Components\TextInput::make('ip_address')->label('IP Address'),
-                Components\KeyValue::make('old_values')->label('Data Lama')->formatStateUsing(fn($state) => json_decode($state, true) ?? []),
-                Components\KeyValue::make('new_values')->label('Data Baru')->formatStateUsing(fn($state) => json_decode($state, true) ?? []),
+                Components\KeyValue::make('old_values')->label('Data Lama')->formatStateUsing(fn($state) => is_string($state) ? json_decode($state, true) : ($state ?? [])),
+                Components\KeyValue::make('new_values')->label('Data Baru')->formatStateUsing(fn($state) => is_string($state) ? json_decode($state, true) : ($state ?? [])),
             ]);
     }
 

@@ -42,7 +42,7 @@
             text-align: center;
             margin-bottom: 5px;
         }
-        .label-barcode-img img {
+        .label-barcode-img img, .label-barcode-img svg {
             max-width: 100%;
             height: 40px;
         }
@@ -111,12 +111,15 @@
         <p class="subtitle">{{ $location->campus->name }}</p>
         
         <div class="labels-grid">
+            @php
+                $barcodeGenerator = new \Picqer\Barcode\BarcodeGeneratorSVG();
+            @endphp
             @foreach($assets as $asset)
             <div class="label-card">
                 <div class="label-header">HAIBOSS</div>
                 
                 <div class="label-barcode-img">
-                    <img src="https://bwipjs-api.metafloor.com/?bcid=code128&text={{ urlencode($asset->barcode) }}&scale=2&height=10&includetext=false" alt="Barcode">
+                    {!! $barcodeGenerator->getBarcode($asset->barcode, $barcodeGenerator::TYPE_CODE_128, 2, 40) !!}
                 </div>
                 <div class="label-barcode-number">{{ $asset->barcode }}</div>
                 

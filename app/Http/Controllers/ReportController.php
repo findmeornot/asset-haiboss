@@ -66,6 +66,21 @@ class ReportController extends Controller
             'printedAt' => now(),
         ])->render();
 
+        \App\Services\AuditLogger::log(
+            action: \App\Enums\AuditAction::EXPORT_EXCEL,
+            metadata: [
+                'type' => $type,
+                'filters' => [
+                    'campus_id' => $campusId,
+                    'location_id' => $locationId,
+                    'category_id' => $categoryId,
+                    'ownership' => $ownership,
+                    'year' => $year,
+                ],
+                'records_count' => $data->count(),
+            ]
+        );
+
         return response()->streamDownload(function () use ($html) {
             echo $html;
         }, $filename, [

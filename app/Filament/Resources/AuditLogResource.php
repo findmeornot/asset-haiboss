@@ -156,17 +156,6 @@ class AuditLogResource extends Resource
     {
         return $schema
             ->components([
-<<<<<<< HEAD
-                Components\TextInput::make('action')->label('Tindakan'),
-                Components\TextInput::make('auditable_type')->label('Tipe Modul'),
-                Components\TextInput::make('auditable_id')->label('ID Modul'),
-                Components\Textarea::make('reason')->label('Alasan'),
-                Components\TextInput::make('ip_address')->label('IP Address'),
-                Components\KeyValue::make('old_values')->label('Data Lama')->formatStateUsing(fn($state) => is_string($state) ? json_decode($state, true) : ($state ?? [])),
-                Components\KeyValue::make('new_values')->label('Data Baru')->formatStateUsing(fn($state) => is_string($state) ? json_decode($state, true) : ($state ?? [])),
-            ]);
-    }
-=======
                 \Filament\Schemas\Components\Section::make('Informasi Utama')
                     ->columns(3)
                     ->schema([
@@ -187,7 +176,7 @@ class AuditLogResource extends Resource
                             ->columnSpan(2)
                             ->content(fn (AuditLog $record) => $record->metadata['user_agent'] ?? '-'),
                     ]),
-                
+
                 \Filament\Schemas\Components\Section::make('Detail Objek / Aset')
                     ->columns(3)
                     ->visible(fn (AuditLog $record) => isset($record->metadata['snapshot']) || $record->auditable_type)
@@ -206,8 +195,6 @@ class AuditLogResource extends Resource
                             ->content(fn (AuditLog $record) => $record->auditable_type ? class_basename($record->auditable_type) . ' #' . $record->auditable_id : null)
                             ->visible(fn (AuditLog $record) => !isset($record->metadata['snapshot']['asset_name'])),
                     ]),
->>>>>>> 06b7d33ccd45b7c67f7d5e074c885723fd7e97a3
-
                 \Filament\Schemas\Components\Section::make('Detail Mutasi & Approval')
                     ->columns(2)
                     ->visible(fn (AuditLog $record) => in_array($record->action->value, ['mutation_created', 'mutation_approved', 'mutation_rejected', 'mutation_completed']))

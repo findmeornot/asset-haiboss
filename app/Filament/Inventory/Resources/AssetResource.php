@@ -117,9 +117,23 @@ class AssetResource extends Resource
                                 ->maxLength(255),
 
                             // Merk/Tipe (brand) - field baru
-                            Components\TextInput::make('brand')
+                            Components\Select::make('brand')
                                 ->label('Merk/Tipe')
-                                ->maxLength(255),
+                                ->searchable()
+                                ->options(function () {
+                                    return \App\Models\Asset::whereNotNull('brand')
+                                        ->distinct()
+                                        ->pluck('brand', 'brand')
+                                        ->toArray();
+                                })
+                                ->createOptionForm([
+                                    Components\TextInput::make('brand')
+                                        ->label('Merk/Tipe Baru')
+                                        ->required()
+                                ])
+                                ->createOptionUsing(function (array $data) {
+                                    return $data['brand'];
+                                }),
 
                             // Nomor Seri (serial_number)
                             Components\TextInput::make('serial_number')
@@ -283,6 +297,7 @@ class AssetResource extends Resource
                                     'grant'   => 'Hibah',
                                     'loan'    => 'Pinjaman',
                                 ])
+                                ->native(false)
                                 ->required(),
 
                             // Tahun Perolehan (purchase_date)
@@ -509,123 +524,111 @@ class AssetResource extends Resource
                     ->visible(fn () => Auth::user()->hasRole('superadmin')),
             ])
             ->actions([
-                \Filament\Actions\Action::make('printLabel')
-                    ->label('Cetak Barcode')
-                    ->hiddenLabel()
-                    ->tooltip('Cetak Barcode')
-                    ->icon('heroicon-o-bars-4')
-                    ->color('success')
-                    ->modalHeading('Preview Label Aset')
-                    ->modalContent(fn (Asset $record) => view('filament.components.asset-label-preview', ['record' => $record]))
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Tutup')
-                    ->extraModalFooterActions([
-                        \Filament\Actions\Action::make('print')
-                            ->label('Print Sekarang')
-                            ->color('primary')
-                            ->icon('heroicon-o-printer')
-                            ->url(fn (Asset $record) => route('asset.label.print', $record->id))
-                            ->openUrlInNewTab(),
-                    ]),
-                \Filament\Actions\Action::make('changeStatus')
-                    ->label('Ubah Kondisi')
-                    ->hiddenLabel()
-                    ->tooltip('Update Kondisi')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('warning')
-                    ->visible(fn (?Asset $record) => Auth::user()->hasPermissionTo('status.update') && ($record ? !$record->trashed() : true))
-                    ->form([
-                        Components\Select::make('new_status')
-                            ->label('Kondisi Baru')
-                            ->options([
-                                'stock'                    => 'Stok Tersedia',
-                                'active'                   => 'Aktif / Digunakan',
-                                'borrowed'                 => 'Dipinjam',
-                                'maintenance'              => 'Dalam Perbaikan',
-                                'minor_damage'             => 'Rusak Ringan',
-                                'major_damage'             => 'Rusak Berat',
-                                'lost'                     => 'Hilang (Butuh Approval)',
-                                'sold'                     => 'Terjual',
-                                'administratively_deleted' => 'Penghapusan Administratif',
-                                'destroyed'                => 'Dimusnahkan (Butuh Approval)',
-                            ])
-                            ->required(),
-                        Components\Textarea::make('reason')
-                            ->label('Alasan Perubahan')
-                            ->required()
-                    ])
-                    ->action(function (Asset $record, array $data) {
-                        $newStatus = $data['new_status'];
-                        $reason = $data['reason'];
-
-                        try {
-                            \Illuminate\Support\Facades\DB::transaction(function () use ($record, $newStatus, $reason) {
-                                $lockedAsset = Asset::where('id', $record->id)->lockForUpdate()->first();
-
-                                if (in_array($newStatus, ['lost', 'destroyed'])) {
-                                    $hasPending = \App\Models\ApprovalRequest::where('status', 'pending')
-                                        ->where('request_type', 'status_change')
-                                        ->whereJsonContains('payload->asset_id', $record->id)
-                                        ->exists();
-
-                                    if ($hasPending) {
-                                        throw new \Exception("Barang ini masih memiliki pengajuan yang menunggu persetujuan.");
+                \Filament\Actions\ActionGroup::make([
+                    \Filament\Actions\Action::make('printLabel')
+                        ->label('Cetak Barcode')
+                        ->icon('heroicon-o-bars-4')
+                        ->color('success')
+                        ->modalHeading('Preview Label Aset')
+                        ->modalContent(fn (Asset $record) => view('filament.components.asset-label-preview', ['record' => $record]))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Tutup')
+                        ->extraModalFooterActions([
+                            \Filament\Actions\Action::make('print')
+                                ->label('Print Sekarang')
+                                ->color('primary')
+                                ->icon('heroicon-o-printer')
+                                ->url(fn (Asset $record) => route('asset.label.print', $record->id))
+                                ->openUrlInNewTab(),
+                        ]),
+                    \Filament\Actions\Action::make('changeStatus')
+                        ->label('Ubah Kondisi')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->visible(fn (?Asset $record) => Auth::user()->hasPermissionTo('status.update') && ($record ? !$record->trashed() : true))
+                        ->form([
+                            Components\Select::make('new_status')
+                                ->label('Kondisi Baru')
+                                ->options([
+                                    'stock'                    => 'Stok Tersedia',
+                                    'active'                   => 'Aktif / Digunakan',
+                                    'borrowed'                 => 'Dipinjam',
+                                    'maintenance'              => 'Dalam Perbaikan',
+                                    'minor_damage'             => 'Rusak Ringan',
+                                    'major_damage'             => 'Rusak Berat',
+                                    'lost'                     => 'Hilang (Butuh Approval)',
+                                    'sold'                     => 'Terjual',
+                                    'administratively_deleted' => 'Penghapusan Administratif',
+                                    'destroyed'                => 'Dimusnahkan (Butuh Approval)',
+                                ])
+                                ->required(),
+                            Components\Textarea::make('reason')
+                                ->label('Alasan Perubahan')
+                                ->required()
+                        ])
+                        ->action(function (Asset $record, array $data) {
+                            $newStatus = $data['new_status'];
+                            $reason = $data['reason'];
+    
+                            try {
+                                \Illuminate\Support\Facades\DB::transaction(function () use ($record, $newStatus, $reason) {
+                                    $lockedAsset = Asset::where('id', $record->id)->lockForUpdate()->first();
+    
+                                    if (in_array($newStatus, ['lost', 'destroyed'])) {
+                                        $hasPending = \App\Models\ApprovalRequest::where('status', 'pending')
+                                            ->where('request_type', 'status_change')
+                                            ->whereJsonContains('payload->asset_id', $record->id)
+                                            ->exists();
+    
+                                        if ($hasPending) {
+                                            throw new \Exception("Barang ini masih memiliki pengajuan yang menunggu persetujuan.");
+                                        }
+    
+                                        \App\Models\ApprovalRequest::create([
+                                            'request_type' => 'status_change',
+                                            'requested_by' => Auth::id(),
+                                            'status'       => 'pending',
+                                            'reason'       => $reason,
+                                            'payload'      => json_encode([
+                                                'asset_id'   => $record->id,
+                                                'new_status' => $newStatus,
+                                                'old_status' => $lockedAsset->status
+                                            ])
+                                        ]);
+                                    } else {
+                                        request()->merge(['status_change_reason' => $reason]);
+                                        $lockedAsset->update(['status' => $newStatus]);
                                     }
-
-                                    \App\Models\ApprovalRequest::create([
-                                        'request_type' => 'status_change',
-                                        'requested_by' => Auth::id(),
-                                        'status'       => 'pending',
-                                        'reason'       => $reason,
-                                        'payload'      => json_encode([
-                                            'asset_id'   => $record->id,
-                                            'new_status' => $newStatus,
-                                            'old_status' => $lockedAsset->status
-                                        ])
-                                    ]);
+                                });
+    
+                                if (in_array($newStatus, ['lost', 'destroyed'])) {
+                                    \Filament\Notifications\Notification::make()
+                                        ->title('Menunggu Persetujuan')
+                                        ->body('Perubahan ke kondisi kritis membutuhkan persetujuan.')
+                                        ->warning()
+                                        ->send();
                                 } else {
-                                    request()->merge(['status_change_reason' => $reason]);
-                                    $lockedAsset->update(['status' => $newStatus]);
+                                    \Filament\Notifications\Notification::make()
+                                        ->title('Kondisi Berhasil Diubah')
+                                        ->success()
+                                        ->send();
                                 }
-                            });
-
-                            if (in_array($newStatus, ['lost', 'destroyed'])) {
+                            } catch (\Exception $e) {
                                 \Filament\Notifications\Notification::make()
-                                    ->title('Menunggu Persetujuan')
-                                    ->body('Perubahan ke kondisi kritis membutuhkan persetujuan.')
-                                    ->warning()
-                                    ->send();
-                            } else {
-                                \Filament\Notifications\Notification::make()
-                                    ->title('Kondisi Berhasil Diubah')
-                                    ->success()
+                                    ->title('Gagal Memproses')
+                                    ->body($e->getMessage())
+                                    ->danger()
                                     ->send();
                             }
-                        } catch (\Exception $e) {
-                            \Filament\Notifications\Notification::make()
-                                ->title('Gagal Memproses')
-                                ->body($e->getMessage())
-                                ->danger()
-                                ->send();
-                        }
-                    }),
-                \Filament\Actions\ViewAction::make()
-                    ->hiddenLabel()
-                    ->tooltip('Lihat Detail'),
-                \Filament\Actions\EditAction::make()
-                    ->hiddenLabel()
-                    ->tooltip('Edit Barang'),
-                \Filament\Actions\DeleteAction::make()
-                    ->hiddenLabel()
-                    ->tooltip('Hapus Barang')
-                    ->modalHeading('Hapus Aset (Soft Delete)')
-                    ->modalDescription('Aset akan dihapus dari daftar aktif, tetapi histori tetap tersimpan.'),
-                \Filament\Actions\ForceDeleteAction::make()
-                    ->hiddenLabel()
-                    ->tooltip('Hapus Permanen'),
-                \Filament\Actions\RestoreAction::make()
-                    ->hiddenLabel()
-                    ->tooltip('Pulihkan Barang'),
+                        }),
+                    \Filament\Actions\ViewAction::make(),
+                    \Filament\Actions\EditAction::make(),
+                    \Filament\Actions\DeleteAction::make()
+                        ->modalHeading('Hapus Aset (Soft Delete)')
+                        ->modalDescription('Aset akan dihapus dari daftar aktif, tetapi histori tetap tersimpan.'),
+                    \Filament\Actions\ForceDeleteAction::make(),
+                    \Filament\Actions\RestoreAction::make(),
+                ])
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([

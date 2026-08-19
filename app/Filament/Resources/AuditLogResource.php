@@ -147,7 +147,11 @@ class AuditLogResource extends Resource
                     ),
             ])
             ->actions([
-                \Filament\Actions\ViewAction::make()->label('Lihat Detail')->modalHeading('Detail Audit Trail')->modalWidth('4xl'),
+                \Filament\Actions\ViewAction::make()
+                    ->iconButton()
+                    ->tooltip('Lihat Detail')
+                    ->modalHeading('Detail Audit Trail')
+                    ->modalWidth('4xl'),
             ])
             ->emptyStateHeading('Belum ada aktivitas audit.');
     }

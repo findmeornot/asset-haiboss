@@ -8,7 +8,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Forms\Components;
 
 class AssetScanner extends Page implements HasForms
@@ -50,7 +50,7 @@ class AssetScanner extends Page implements HasForms
     public ?string $scanError = null;
     public ?array $data = [];
 
-    public function form(Form $form): Form
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema([

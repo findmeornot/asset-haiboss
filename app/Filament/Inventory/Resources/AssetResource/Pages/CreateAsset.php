@@ -13,6 +13,17 @@ class CreateAsset extends CreateRecord
 
     protected ?array $purchaseData = null;
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('back')
+                ->label('Kembali')
+                ->icon('heroicon-o-arrow-left')
+                ->color('gray')
+                ->url(fn () => static::getResource()::getUrl('index')),
+        ];
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Generate inventory number automatically

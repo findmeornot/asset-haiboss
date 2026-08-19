@@ -16,9 +16,29 @@ class ListAssets extends ListRecords
 {
     protected static string $resource = AssetResource::class;
 
+    public function getHeading(): string | \Illuminate\Contracts\Support\Htmlable
+    {
+        $heading = parent::getHeading();
+        return new HtmlString('
+            <style>
+                @media (max-width: 639px) {
+                    .fi-header {
+                        flex-direction: row !important;
+                        justify-content: space-between !important;
+                        align-items: center !important;
+                    }
+                    .fi-header-actions-ctn {
+                        margin-top: 0 !important;
+                    }
+                }
+            </style>
+            ' . $heading
+        );
+    }
+
     protected function getHeaderActions(): array
     {
-        return [
+        return [ \Filament\Actions\ActionGroup::make([
             // ── Cetak Barcode Massal ──────────────────────────────────────
             Action::make('bulkPrintBarcode')
                 ->label('Cetak Barcode')
@@ -281,16 +301,23 @@ class ListAssets extends ListRecords
                 ->modalSubmitActionLabel('Proses Import')
                 ->modalCancelActionLabel('Batal'),
 
-            // ── Download Template ────────────────────────────────
             Action::make('downloadTemplate')
                 ->label('Download Template')
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('gray')
                 ->url(fn () => route('asset.import.template'))
                 ->openUrlInNewTab(),
+            ])
+            ->label('Opsi Tambahan')
+            ->icon('heroicon-m-ellipsis-vertical')
+            ->color('gray')
+            ->tooltip('Opsi Tambahan'),
 
             // ── Create Asset ────────────────────────────────────
-            \Filament\Actions\CreateAction::make(),
+            \Filament\Actions\CreateAction::make()
+                ->label('New Barang/Aset')
+                ->labeledFrom('lg')
+                ->icon('heroicon-o-plus'),
         ];
     }
 }

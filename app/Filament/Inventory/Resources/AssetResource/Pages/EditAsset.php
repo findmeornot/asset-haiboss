@@ -23,9 +23,18 @@ class EditAsset extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
+        $data['purchase_data'] = [];
+        
+        if (array_key_exists('ownership', $data)) {
+            $data['purchase_data']['ownership'] = $data['ownership'];
+        }
+        if (array_key_exists('unit', $data)) {
+            $data['purchase_data']['unit'] = $data['unit'];
+        }
+
         // Populate purchase data for the edit form if user has permission
-        if (Auth::user()->hasPermissionTo('financial.view') && $this->record->purchase) {
-            $data['purchase_data'] = $this->record->purchase->toArray();
+        if ($this->record->purchase) {
+            $data['purchase_data'] = array_merge($data['purchase_data'], $this->record->purchase->toArray());
         }
         return $data;
     }
@@ -35,6 +44,19 @@ class EditAsset extends EditRecord
         // Extract purchase data
         if (isset($data['purchase_data'])) {
             $this->purchaseData = $data['purchase_data'];
+
+            if (array_key_exists('ownership', $this->purchaseData)) {
+                $data['ownership'] = $this->purchaseData['ownership'];
+                unset($this->purchaseData['ownership']);
+            }
+            if (array_key_exists('unit', $this->purchaseData)) {
+                $data['unit'] = $this->purchaseData['unit'];
+                unset($this->purchaseData['unit']);
+            }
+            if (array_key_exists('quantity', $this->purchaseData)) {
+                unset($this->purchaseData['quantity']);
+            }
+
             unset($data['purchase_data']);
         }
 
@@ -64,7 +86,7 @@ class EditAsset extends EditRecord
 
     protected function afterSave(): void
     {
-        if ($this->purchaseData && Auth::user()->hasPermissionTo('financial.update')) {
+        if ($this->purchaseData) {
             $oldPrice = $this->record->purchase ? $this->record->purchase->unit_price : null;
             $newPrice = $this->purchaseData['unit_price'] ?? null;
 

@@ -21,6 +21,19 @@ class CreateAsset extends CreateRecord
         // Extract purchase data
         if (isset($data['purchase_data'])) {
             $this->purchaseData = $data['purchase_data'];
+            
+            if (array_key_exists('ownership', $this->purchaseData)) {
+                $data['ownership'] = $this->purchaseData['ownership'];
+                unset($this->purchaseData['ownership']);
+            }
+            if (array_key_exists('unit', $this->purchaseData)) {
+                $data['unit'] = $this->purchaseData['unit'];
+                unset($this->purchaseData['unit']);
+            }
+            if (array_key_exists('quantity', $this->purchaseData)) {
+                unset($this->purchaseData['quantity']);
+            }
+            
             unset($data['purchase_data']);
         }
 

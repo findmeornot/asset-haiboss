@@ -34,8 +34,8 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(RolePermissionSeeder::class);
-        // $this->call(ClassificationSeeder::class);
-        // $this->call(CategorySeeder::class);
+        $this->call(ClassificationSeeder::class);
+        $this->call(CategorySeeder::class);
         // $this->call(DummyDataSeeder::class);
     }
 }

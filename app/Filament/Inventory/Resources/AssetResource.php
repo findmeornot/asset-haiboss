@@ -329,11 +329,7 @@ class AssetResource extends Resource
                                 ->numeric()
                                 ->prefix('Rp'),
                         ])
-                        ->statePath('purchase_data')
-                        // Only user with financial.view can see the section
-                        ->visible(fn () => Auth::user()->hasPermissionTo('financial.view'))
-                        // Only user with financial.update can edit it
-                        ->disabled(fn () => !Auth::user()->hasPermissionTo('financial.update')),
+                        ->statePath('purchase_data'),
 
                     \Filament\Schemas\Components\Section::make('Penyusutan & Nilai Buku')
                         ->schema([
@@ -357,7 +353,7 @@ class AssetResource extends Resource
                                 ->content(fn (?Asset $record) => $record ? \App\Services\DepreciationService::calculate($record)['remaining_useful_life'] . ' Tahun' : '-'),
                         ])
                         ->columns(2)
-                        ->visible(fn (?Asset $record) => $record !== null && Auth::user()->hasPermissionTo('financial.view')),
+                        ->visible(fn (?Asset $record) => $record !== null),
                 ])->columnSpan(['lg' => 1]),
             ])
             ->columns(3);
@@ -425,7 +421,6 @@ class AssetResource extends Resource
                 Tables\Columns\TextColumn::make('purchase.total_price')
                     ->label('Harga Perolehan')
                     ->money('idr')
-                    ->visible(fn () => Auth::user()->hasPermissionTo('financial.view'))
                     ->sortable(),
             ])
             ->filters([

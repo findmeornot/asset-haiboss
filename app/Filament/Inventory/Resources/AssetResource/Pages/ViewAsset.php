@@ -20,8 +20,17 @@ class ViewAsset extends ViewRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        if (Auth::user()->hasPermissionTo('financial.view') && $this->record->purchase) {
-            $data['purchase_data'] = $this->record->purchase->toArray();
+        $data['purchase_data'] = [];
+        
+        if (array_key_exists('ownership', $data)) {
+            $data['purchase_data']['ownership'] = $data['ownership'];
+        }
+        if (array_key_exists('unit', $data)) {
+            $data['purchase_data']['unit'] = $data['unit'];
+        }
+
+        if ($this->record->purchase) {
+            $data['purchase_data'] = array_merge($data['purchase_data'], $this->record->purchase->toArray());
         }
         return $data;
     }

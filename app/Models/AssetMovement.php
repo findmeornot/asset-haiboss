@@ -22,6 +22,61 @@ class AssetMovement extends Model
 
     protected static function booted(): void
     {
+        static::updated(function (AssetMovement $movement) {
+            $changes = $movement->getChanges();
+            $original = array_intersect_key($movement->getOriginal(), $changes);
+            
+            $action = \App\Enums\AuditAction::MUTATION_UPDATED;
+            if ($movement->wasChanged('status')) {
+                if ($movement->status === 'approved') {
+                    $action = \App\Enums\AuditAction::MUTATION_APPROVED;
+                } elseif ($movement->status === 'rejected') {
+                    $action = \App\Enums\AuditAction::MUTATION_REJECTED;
+                } elseif ($movement->status === 'completed') {
+                    $action = \App\Enums\AuditAction::MUTATION_COMPLETED;
+                }
+            }
+
+            $metadata = [
+                'snapshot' => [
+                    'asset_name' => $movement->asset->name ?? null,
+                    'inventory_number' => $movement->asset->inventory_number ?? null,
+                    'sku' => $movement->asset->sku ?? null,
+                    'source_location' => $movement->sourceLocation->name ?? null,
+                    'destination_location' => $movement->destinationLocation->name ?? null,
+                    'source_pic' => $movement->sourcePic->name ?? null,
+                    'destination_pic' => $movement->destinationPic->name ?? null,
+                    'requester' => $movement->requestedBy->name ?? null,
+                    'approver' => $movement->approvedBy->name ?? null,
+                    'reason' => $movement->reason ?? null,
+                    'status_before' => $original['status'] ?? $movement->getOriginal('status'),
+                    'status_after' => $movement->status,
+                ]
+            ];
+
+            $reason = request()->input('reject_reason') ?? request()->input('approval_note');
+
+            \App\Services\AuditLogger::log($action, $movement, $original, $changes, $reason, null, null, $metadata);
+        });
+
+        static::created(function (AssetMovement $movement) {
+            $metadata = [
+                'snapshot' => [
+                    'asset_name' => $movement->asset->name ?? null,
+                    'inventory_number' => $movement->asset->inventory_number ?? null,
+                    'sku' => $movement->asset->sku ?? null,
+                    'source_location' => $movement->sourceLocation->name ?? null,
+                    'destination_location' => $movement->destinationLocation->name ?? null,
+                    'source_pic' => $movement->sourcePic->name ?? null,
+                    'destination_pic' => $movement->destinationPic->name ?? null,
+                    'requester' => $movement->requestedBy->name ?? null,
+                    'reason' => $movement->reason ?? null,
+                    'status' => $movement->status,
+                ]
+            ];
+            \App\Services\AuditLogger::log(\App\Enums\AuditAction::MUTATION_CREATED, $movement, null, $movement->toArray(), null, null, null, $metadata);
+        });
+
         static::saving(function (AssetMovement $movement) {
             if ($movement->source_campus_id && $movement->source_location_id) {
                 $linkedSource = \App\Models\Location::whereKey($movement->source_location_id)

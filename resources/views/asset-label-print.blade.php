@@ -34,7 +34,12 @@
             margin: 0 auto;
             width: 100%;
             height: 60px;
-            object-fit: contain;
+            display: flex;
+            justify-content: center;
+        }
+        .barcode svg {
+            max-width: 100%;
+            height: 100%;
         }
         .inventory-number {
             margin-top: 10px;
@@ -52,9 +57,14 @@
     <div class="label-container">
         <div class="company-name">PT. HAIBOSS</div>
         <div class="asset-name">{{ $asset->name }}</div>
-        <!-- External API Barcode for simplicity -->
-        <img class="barcode" src="https://bwipjs-api.metafloor.com/?bcid=code128&text={{ urlencode($asset->inventory_number) }}&scale=2&height=10&includetext=false" alt="Barcode">
-        <div class="inventory-number">{{ $asset->inventory_number }}</div>
+        <!-- External API Barcode replaced with SVG -->
+        @php
+            $barcodeGenerator = new \Picqer\Barcode\BarcodeGeneratorSVG();
+        @endphp
+        <div class="barcode">
+            {!! $barcodeGenerator->getBarcode($asset->barcode, $barcodeGenerator::TYPE_CODE_128, 2, 60) !!}
+        </div>
+        <div class="inventory-number">{{ $asset->barcode }}</div>
     </div>
 </body>
 </html>

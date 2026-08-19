@@ -45,11 +45,19 @@ class AssetResource extends Resource
                         ->schema([
                             // Kode (inventory_number)
                             Components\TextInput::make('inventory_number')
-                                ->label('Kode')
+                                ->label('SKU / Kode')
                                 ->disabled()
                                 ->dehydrated(false)
                                 ->visibleOn(['edit', 'view'])
-                                ->helperText('Kode inventaris dibuat otomatis oleh sistem.'),
+                                ->helperText('SKU inventaris dibuat otomatis.'),
+
+                            // Barcode Number (barcode)
+                            Components\TextInput::make('barcode')
+                                ->label('Barcode Number')
+                                ->disabled()
+                                ->dehydrated(false)
+                                ->visibleOn(['edit', 'view'])
+                                ->helperText('Identitas fisik permanen barang.'),
 
                             // Kategori Akuntansi (classification_id)
                             Components\Select::make('classification_id')
@@ -364,8 +372,12 @@ class AssetResource extends Resource
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
+                Tables\Columns\TextColumn::make('barcode')
+                    ->label('Barcode')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('inventory_number')
-                    ->label('Kode')
+                    ->label('SKU')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('classification.name')

@@ -7,10 +7,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-class Asset extends Model {
-    use HasRouteUlid;
 
-    use SoftDeletes;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+
+#[ObservedBy(\App\Observers\AssetObserver::class)]
+class Asset extends Model {
+    use HasRouteUlid, SoftDeletes, HasFactory;
     protected $guarded = [];
 
     protected static function booted(): void

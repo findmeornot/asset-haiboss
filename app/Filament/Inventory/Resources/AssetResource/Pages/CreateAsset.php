@@ -16,7 +16,9 @@ class CreateAsset extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Generate inventory number automatically
-        $data['inventory_number'] = InventoryNumberGenerator::generate();
+        $classification = \App\Models\Classification::find($data['classification_id'] ?? null);
+        $category = \App\Models\Category::find($data['category_id'] ?? null);
+        $data['inventory_number'] = InventoryNumberGenerator::generate($classification, $category);
 
         // Extract purchase data
         if (isset($data['purchase_data'])) {

@@ -25,10 +25,10 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $adminExample = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+        $inventory = User::firstOrCreate(
+            ['email' => 'inventory@example.com'],
             [
-                'name' => 'Admin Example',
+                'name' => 'Inventory Manager',
                 'password' => bcrypt('password'),
             ]
         );

@@ -44,6 +44,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->databaseNotifications()
             ->sidebarWidth('15rem')
+            ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth(Width::Full)
             ->renderHook(
                 \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_AFTER,

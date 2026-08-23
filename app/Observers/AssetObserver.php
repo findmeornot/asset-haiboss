@@ -60,14 +60,6 @@ class AssetObserver
                 'changed_by' => $userId,
             ]);
             AuditLogger::log('location_change', $asset, $original, $changes);
-        } elseif ($asset->wasChanged('unit_price') || $asset->wasChanged('total_price')) {
-            AssetPriceHistory::create([
-                'asset_id' => $asset->id,
-                'old_price' => $asset->getOriginal('total_price') ?? $asset->getOriginal('unit_price'),
-                'new_price' => $asset->total_price ?? $asset->unit_price,
-                'changed_by' => $userId,
-            ]);
-            AuditLogger::log('price_change', $asset, $original, $changes);
         } elseif ($asset->wasChanged('inventory_number')) {
             AuditLogger::log('sku_change', $asset, $original, $changes);
         } else {

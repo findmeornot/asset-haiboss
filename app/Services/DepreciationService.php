@@ -17,8 +17,18 @@ class DepreciationService
      */
     public static function calculate(Asset $asset): array
     {
-        $cost = $asset->purchase ? (string) ($asset->purchase->total_price ?? '0') : '0';
-        $purchaseDate = $asset->purchase ? $asset->purchase->purchase_date : null;
+        // Path changed from asset->purchase->total_price to asset->purchaseItem->unit_price
+        $cost = '0';
+        $purchaseDate = null;
+        
+        if ($asset->purchaseItem) {
+            $cost = (string) ($asset->purchaseItem->unit_price ?? '0');
+            $purchaseDate = $asset->purchaseItem->purchase ? $asset->purchaseItem->purchase->purchase_date : null;
+        } elseif ($asset->purchase) {
+            $cost = (string) ($asset->purchase->total_price ?? '0');
+            $purchaseDate = $asset->purchase->purchase_date;
+        }
+
         $usefulLife = $asset->category ? (int) $asset->category->useful_life : 0;
         
         // Business Rules Configurations

@@ -120,11 +120,18 @@ class AssetResource extends Resource
                             Components\Select::make('brand')
                                 ->label('Merk/Tipe')
                                 ->searchable()
-                                ->options(function () {
-                                    return \App\Models\Asset::whereNotNull('brand')
+                                ->options(function (callable $get) {
+                                    $options = \App\Models\Asset::whereNotNull('brand')
                                         ->distinct()
                                         ->pluck('brand', 'brand')
                                         ->toArray();
+                                        
+                                    $current = $get('brand');
+                                    if ($current && !isset($options[$current])) {
+                                        $options[$current] = $current;
+                                    }
+                                    
+                                    return $options;
                                 })
                                 ->createOptionForm([
                                     Components\TextInput::make('brand')

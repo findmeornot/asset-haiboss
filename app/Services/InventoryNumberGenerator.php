@@ -21,28 +21,54 @@ class InventoryNumberGenerator
 
             $prefix = "INV/{$classCode}/{$catCode}";
 
-            // Get the latest asset with this exact prefix
-            $latestAsset = Asset::where('inventory_number', 'like', "{$prefix}/%")
-                                ->lockForUpdate()
-                                ->orderByRaw('LENGTH(inventory_number) DESC')
-                                ->orderBy('inventory_number', 'desc')
-                                ->first();
+            // Use upsert to handle concurrent first inserts safely
+            DB::table('inventory_number_sequences')->upsert(
+                [
+                    'name' => $prefix,
+                    'current_value' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                ['name'],
+                // Do not update current_value if it exists, just update updated_at
+                ['updated_at'] 
+            );
 
-            $sequence = 1;
-            if ($latestAsset) {
-                // Extract sequence from INV/AST/ELK/0001
-                $parts = explode('/', $latestAsset->inventory_number);
-                $lastPart = end($parts);
-                if (is_numeric($lastPart)) {
-                    $sequence = (int) $lastPart + 1;
+            // Now row is guaranteed to exist, lock it
+            $seqRow = DB::table('inventory_number_sequences')
+                ->where('name', $prefix)
+                ->lockForUpdate()
+                ->first();u
+
+            $sequence = $seqRow->current_value + 1;
+            
+            // Just in case it's 1 and there are legacy items not tracked in sequence table
+            if ($sequence === 1) {
+                $latestAsset = Asset::where('inventory_number', 'like', "{$prefix}/%")
+                                    ->orderByRaw('LENGTH(inventory_number) DESC')
+                                    ->orderBy('inventory_number', 'desc')
+                                    ->first();
+                if ($latestAsset) {
+                    $parts = explode('/', $latestAsset->inventory_number);
+                    $lastPart = end($parts);
+                    if (is_numeric($lastPart)) {
+                        $sequence = (int) $lastPart + 1;
+                    }
                 }
             }
+
+            DB::table('inventory_number_sequences')
+                ->where('name', $prefix)
+                ->update(['current_value' => $sequence]);
 
             $inventoryNumber = sprintf('%s/%04d', $prefix, $sequence);
 
             // Ensure uniqueness
             while (Asset::where('inventory_number', $inventoryNumber)->exists()) {
                 $sequence++;
+                DB::table('inventory_number_sequences')
+                    ->where('name', $prefix)
+                    ->update(['current_value' => $sequence]);
                 $inventoryNumber = sprintf('%s/%04d', $prefix, $sequence);
             }
 

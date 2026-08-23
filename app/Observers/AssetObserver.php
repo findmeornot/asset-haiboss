@@ -18,6 +18,18 @@ class AssetObserver
         }
     }
 
+    public function updating(Asset $asset): void
+    {
+        if ($asset->isDirty('classification_id') || $asset->isDirty('category_id')) {
+            $classification = \App\Models\Classification::find($asset->classification_id);
+            $category = \App\Models\Category::find($asset->category_id);
+            
+            if ($classification && $category) {
+                $asset->inventory_number = \App\Services\InventoryNumberGenerator::generate($classification, $category);
+            }
+        }
+    }
+
     public function created(Asset $asset): void
     {
         AuditLogger::log('created', $asset, null, $asset->toArray());
@@ -56,6 +68,8 @@ class AssetObserver
                 'changed_by' => $userId,
             ]);
             AuditLogger::log('price_change', $asset, $original, $changes);
+        } elseif ($asset->wasChanged('inventory_number')) {
+            AuditLogger::log('sku_change', $asset, $original, $changes);
         } else {
             // General Update
             AuditLogger::log('updated', $asset, $original, $changes);

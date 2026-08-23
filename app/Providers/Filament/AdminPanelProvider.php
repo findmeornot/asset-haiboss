@@ -68,7 +68,10 @@ class AdminPanelProvider extends PanelProvider
             // Menyatukan menu inventaris ke dalam panel admin
             ->discoverResources(in: app_path('Filament/Inventory/Resources'), for: 'App\Filament\Inventory\Resources')
             ->discoverPages(in: app_path('Filament/Inventory/Pages'), for: 'App\Filament\Inventory\Pages')
-            ->discoverWidgets(in: app_path('Filament/Inventory/Widgets'), for: 'App\Filament\Inventory\Widgets')
+            ->widgets([
+                \App\Filament\Inventory\Widgets\AssetStatusChart::class,
+                \App\Filament\Inventory\Widgets\LatestAssetMovements::class,
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

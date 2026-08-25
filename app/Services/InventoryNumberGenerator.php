@@ -38,7 +38,7 @@ class InventoryNumberGenerator
             $seqRow = DB::table('inventory_number_sequences')
                 ->where('name', $prefix)
                 ->lockForUpdate()
-                ->first();u
+                ->first();
 
             $sequence = $seqRow->current_value + 1;
             

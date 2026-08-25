@@ -115,11 +115,19 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->label('PIC')
                     ->searchable()
                     ->toggleable(),
-                Tables\Columns\TextColumn::make('purchase.total_price')
-                    ->label('Total Pembelian')
+                Tables\Columns\TextColumn::make('purchaseItem.unit_price')
+                    ->label('Harga Perolehan (per unit)')
                     ->money('idr')
                     ->visible(fn () => Auth::user()->hasPermissionTo('financial.view'))
-                    ->sortable(),
+                    ->sortable()
+                    ->getStateUsing(function ($record): ?string {
+                        // New architecture: use unit_price from PurchaseItem
+                        if ($record->purchaseItem) {
+                            return $record->purchaseItem->unit_price;
+                        }
+                        // Legacy fallback: use total_price from AssetPurchase
+                        return $record->purchase?->total_price;
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('category_id')

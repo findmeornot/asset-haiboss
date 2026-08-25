@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\Asset;
-use App\Models\AssetPurchase;
+use App\Models\InventoryBalance;
+use App\Models\Purchase;
+use App\Models\PurchaseItem;
 use App\Models\Campus;
 use App\Models\Category;
 use App\Models\Classification;
@@ -409,7 +411,11 @@ class AssetImportService
      * Import data ke database. Gunakan dalam DB::transaction.
      * Pastikan validateRows() sudah dipanggil dan tidak ada error sebelum memanggil ini.
      *
-     * @return int Jumlah baris berhasil diimport
+     * Setiap baris CSV dengan Jumlah=N akan menghasilkan:
+     *   - Kategori 'supply' : 1 InventoryBalance saldo += N (tidak membuat Asset)
+     *   - Kategori lainnya  : 1 Purchase + 1 PurchaseItem + N Asset records individual
+     *
+     * @return int Jumlah unit berhasil diimport (jumlah Asset yang dibuat + jumlah supply unit)
      */
     public function import(array $rows): int
     {
@@ -447,7 +453,7 @@ class AssetImportService
                 $category->classifications()->syncWithoutDetaching([$classification->id]);
             }
 
-            $ruanganName    = trim($row['Ruangan'] ?? '');
+            $ruanganName = trim($row['Ruangan'] ?? '');
 
             // Cari ruangan; jika belum ada dan gedung valid → buat otomatis
             $location = null;
@@ -461,10 +467,11 @@ class AssetImportService
                         'campus_id' => $campus->id,
                         'name'      => $ruanganName,
                     ]);
-                    // Tambahkan ke koleksi in-memory agar baris berikutnya di file ini bisa menemukannya
+                    // Tambahkan ke koleksi in-memory agar baris berikutnya bisa menemukannya
                     $locations->push($location->load('campus'));
                 }
             }
+
             // Cari PIC; jika belum ada → buat otomatis
             $picName = trim($row['PIC'] ?? '');
             $pic     = null;
@@ -499,24 +506,23 @@ class AssetImportService
                 }
             }
 
-            $jumlah = max(1, (int) trim($row['Jumlah'] ?? 1));
+            $jumlah     = max(1, (int) trim($row['Jumlah'] ?? 1));
+            $unitPrice  = $hargaVal ?? 0;
+            $totalPrice = $unitPrice * $jumlah;
 
-            // Kode selalu di-generate otomatis oleh sistem (tidak pakai dari file)
-            $kode = InventoryNumberGenerator::generate($classification, $category);
-
-            // Buat Asset
-            $notesRaw   = trim($row['Keterangan'] ?? '');
+            // Notes (Keterangan) + unknown info suffix
+            $notesRaw    = trim($row['Keterangan'] ?? '');
             $unknownInfo = array_filter([
-                $tahunUnknown  ? 'tahun perolehan tidak diketahui'  : null,
-                $hargaUnknown  ? 'harga perolehan tidak diketahui'  : null,
+                $tahunUnknown ? 'tahun perolehan tidak diketahui' : null,
+                $hargaUnknown ? 'harga perolehan tidak diketahui' : null,
             ]);
             if ($unknownInfo) {
                 $suffix   = '(' . implode(', ', $unknownInfo) . ')';
                 $notesRaw = $notesRaw !== '' ? $notesRaw . ' ' . $suffix : $suffix;
             }
 
-            $asset = Asset::create([
-                'inventory_number'  => $kode,
+            // Shared base data for Asset records
+            $baseAssetData = [
                 'classification_id' => $classification?->id,
                 'category_id'       => $category?->id,
                 'name'              => trim($row['Nama Barang'] ?? ''),
@@ -529,25 +535,103 @@ class AssetImportService
                 'pic_id'            => $pic?->id,
                 'status'            => $statusVal,
                 'notes'             => $notesRaw ?: null,
-            ]);
+            ];
 
-            // Buat AssetPurchase jika ada data harga atau tahun (bahkan jika tahun null)
-            if ($hargaVal !== null || $tahun !== null) {
-                $totalPrice = $hargaVal !== null ? ($hargaVal * $jumlah) : null;
-                AssetPurchase::create([
-                    'asset_id'      => $asset->id,
+            // ──────────────────────────────────────────────────────────────
+            // SUPPLY PATH: update InventoryBalance saldo — no Asset records
+            // ──────────────────────────────────────────────────────────────
+            if ($category && $category->type === 'supply') {
+                // Create Purchase header for traceability
+                $purchase = Purchase::create([
                     'purchase_date' => $purchaseDate,
-                    'quantity'      => $jumlah,
-                    'unit_price'    => $hargaVal,
-                    'total_price'   => $totalPrice,
+                    'ownership'     => $ownershipVal,
+                    'total_amount'  => $totalPrice,
                 ]);
+
+                // firstOrCreate balance grouped by category + name + location
+                $balance = InventoryBalance::firstOrCreate(
+                    [
+                        'category_id' => $category->id,
+                        'name'        => trim($row['Nama Barang'] ?? ''),
+                        'location_id' => $location?->id,
+                    ],
+                    [
+                        'campus_id' => $campus?->id,
+                        'quantity'  => 0,
+                    ]
+                );
+
+                // Add purchased quantity to the running balance
+                $balance->increment('quantity', $jumlah);
+
+                // Record purchase item linked to the balance
+                PurchaseItem::create([
+                    'purchase_id'        => $purchase->id,
+                    'inventory_balance_id' => $balance->id,
+                    'category_id'        => $category->id,
+                    'classification_id'  => $classification?->id,
+                    'name'               => trim($row['Nama Barang'] ?? ''),
+                    'quantity'           => $jumlah,
+                    'unit'               => trim($row['Satuan'] ?? '') ?: null,
+                    'unit_price'         => $unitPrice,
+                    'total_price'        => $totalPrice,
+                    'is_capitalized'     => false, // Supply is never capitalized
+                ]);
+
+                $count += $jumlah; // Count as stock units added
+                continue;
             }
 
-            $count++;
+            // ──────────────────────────────────────────────────────────────
+            // ASSET / INVENTORY PATH: create N individual Asset records
+            // ──────────────────────────────────────────────────────────────
+
+            // Create Purchase header
+            $purchase = Purchase::create([
+                'purchase_date' => $purchaseDate,
+                'ownership'     => $ownershipVal,
+                'total_amount'  => $totalPrice,
+            ]);
+
+            // Create PurchaseItem (1 per row in CSV, regardless of quantity)
+            $purchaseItem = PurchaseItem::create([
+                'purchase_id'       => $purchase->id,
+                'category_id'       => $category?->id,
+                'classification_id' => $classification?->id,
+                'name'              => trim($row['Nama Barang'] ?? ''),
+                'quantity'          => $jumlah,
+                'unit'              => trim($row['Satuan'] ?? '') ?: null,
+                'unit_price'        => $unitPrice,
+                'total_price'       => $totalPrice,
+                // Business Rule: Capitalization based on UNIT PRICE >= Rp1.000.000
+                'is_capitalized'    => PurchaseItem::isCapitalizable($unitPrice),
+            ]);
+
+            // Create N individual Asset records — 1 record = 1 physical unit
+            for ($i = 0; $i < $jumlah; $i++) {
+                // Each unit gets its own unique inventory_number (SKU)
+                // Kode selalu di-generate otomatis oleh sistem (tidak pakai dari file)
+                $inventoryNumber = InventoryNumberGenerator::generate($classification, $category);
+
+                $assetData = $baseAssetData;
+                $assetData['inventory_number'] = $inventoryNumber;
+                $assetData['purchase_item_id'] = $purchaseItem->id;
+                // Barcode is auto-generated by AssetObserver::creating()
+
+                // For quantities > 1, only the first unit gets the original serial_number.
+                // Subsequent units will have serial_number = null to avoid duplicate conflicts.
+                if ($i > 0) {
+                    $assetData['serial_number'] = null;
+                }
+
+                Asset::create($assetData);
+                $count++;
+            }
         }
 
         return $count;
     }
+
 
     // ──────────────────────────────────────────────────────────────
     // Private helpers

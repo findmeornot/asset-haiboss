@@ -38,9 +38,22 @@ class EditAsset extends EditRecord
         }
 
         // Populate purchase data for the edit form if user has permission
-        if ($this->record->purchase) {
+        if ($this->record->purchaseItem) {
+            // New Architecture
+            $purchaseItemData = $this->record->purchaseItem->toArray();
+            
+            // Bring ownership and purchase_date from parent Purchase if available
+            if ($this->record->purchaseItem->purchase) {
+                $purchaseItemData['ownership'] = $this->record->purchaseItem->purchase->ownership;
+                $purchaseItemData['purchase_date'] = $this->record->purchaseItem->purchase->purchase_date;
+            }
+            
+            $data['purchase_data'] = array_merge($data['purchase_data'], $purchaseItemData);
+        } elseif ($this->record->purchase) {
+            // Legacy Fallback
             $data['purchase_data'] = array_merge($data['purchase_data'], $this->record->purchase->toArray());
         }
+
         return $data;
     }
 
@@ -52,13 +65,15 @@ class EditAsset extends EditRecord
 
             if (array_key_exists('ownership', $this->purchaseData)) {
                 $data['ownership'] = $this->purchaseData['ownership'];
-                unset($this->purchaseData['ownership']);
+                // Keep it in purchaseData for saving
             }
             if (array_key_exists('unit', $this->purchaseData)) {
                 $data['unit'] = $this->purchaseData['unit'];
-                unset($this->purchaseData['unit']);
+                // Keep it in purchaseData for saving
             }
             if (array_key_exists('quantity', $this->purchaseData)) {
+                // Quantity is ignored during Edit to prevent orphan assets or missing assets.
+                // It must be edited at the PurchaseItem level directly if supported in the future.
                 unset($this->purchaseData['quantity']);
             }
 
@@ -92,23 +107,77 @@ class EditAsset extends EditRecord
     protected function afterSave(): void
     {
         if ($this->purchaseData) {
-            $oldPrice = $this->record->purchase ? $this->record->purchase->unit_price : null;
-            $newPrice = $this->purchaseData['unit_price'] ?? null;
+            if ($this->record->purchaseItem) {
+                // New Architecture
+                $oldPrice = $this->record->purchaseItem->unit_price;
+                $newPrice = $this->purchaseData['unit_price'] ?? null;
+                
+                // Only update unit_price and total_price on PurchaseItem
+                // This will affect ALL assets under this PurchaseItem
+                $purchaseItemUpdates = [];
+                if (isset($this->purchaseData['unit_price'])) {
+                    $purchaseItemUpdates['unit_price'] = $this->purchaseData['unit_price'];
+                    // Recalculate total_price based on the PurchaseItem's original quantity
+                    $purchaseItemUpdates['total_price'] = $this->purchaseData['unit_price'] * $this->record->purchaseItem->quantity;
+                    // Re-evaluate capitalization rule
+                    $purchaseItemUpdates['is_capitalized'] = \App\Models\PurchaseItem::isCapitalizable($this->purchaseData['unit_price']);
+                }
+                if (isset($this->purchaseData['unit'])) {
+                    $purchaseItemUpdates['unit'] = $this->purchaseData['unit'];
+                }
+                
+                if (!empty($purchaseItemUpdates)) {
+                    $this->record->purchaseItem->update($purchaseItemUpdates);
+                }
 
-            // Update or Create Purchase
-            $this->record->purchase()->updateOrCreate(
-                ['asset_id' => $this->record->id],
-                $this->purchaseData
-            );
+                // Update Parent Purchase if ownership or purchase_date changed
+                if ($this->record->purchaseItem->purchase) {
+                    $purchaseUpdates = [];
+                    if (isset($this->purchaseData['ownership'])) {
+                        $purchaseUpdates['ownership'] = $this->purchaseData['ownership'];
+                    }
+                    if (isset($this->purchaseData['purchase_date'])) {
+                        $purchaseUpdates['purchase_date'] = $this->purchaseData['purchase_date'];
+                    }
+                    if (isset($purchaseItemUpdates['total_price'])) {
+                        // Ideally we should recalculate the total_amount of the Purchase
+                        // by summing all its PurchaseItems. For now, we just update it if it's a 1-item purchase.
+                        $totalAmount = $this->record->purchaseItem->purchase->purchaseItems()->sum('total_price');
+                        $purchaseUpdates['total_amount'] = $totalAmount;
+                    }
+                    
+                    if (!empty($purchaseUpdates)) {
+                        $this->record->purchaseItem->purchase->update($purchaseUpdates);
+                    }
+                }
 
-            // Log Price History if changed
-            if ($oldPrice != $newPrice) {
-                AssetPriceHistory::create([
-                    'asset_id' => $this->record->id,
-                    'old_price' => $oldPrice,
-                    'new_price' => $newPrice,
-                    'changed_by' => Auth::id(),
-                ]);
+                if ($oldPrice != $newPrice) {
+                    AssetPriceHistory::create([
+                        'asset_id' => $this->record->id,
+                        'old_price' => $oldPrice,
+                        'new_price' => $newPrice,
+                        'changed_by' => Auth::id(),
+                    ]);
+                }
+                
+            } else {
+                // Legacy Fallback
+                $oldPrice = $this->record->purchase ? $this->record->purchase->unit_price : null;
+                $newPrice = $this->purchaseData['unit_price'] ?? null;
+
+                $this->record->purchase()->updateOrCreate(
+                    ['asset_id' => $this->record->id],
+                    $this->purchaseData
+                );
+
+                if ($oldPrice != $newPrice) {
+                    AssetPriceHistory::create([
+                        'asset_id' => $this->record->id,
+                        'old_price' => $oldPrice,
+                        'new_price' => $newPrice,
+                        'changed_by' => Auth::id(),
+                    ]);
+                }
             }
         }
     }

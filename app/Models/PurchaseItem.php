@@ -12,6 +12,13 @@ class PurchaseItem extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const CAPITALIZATION_THRESHOLD = 1000000;
+
+    public static function isCapitalizable(float $unitPrice): bool
+    {
+        return $unitPrice >= self::CAPITALIZATION_THRESHOLD;
+    }
+
     protected $guarded = [];
 
     protected $casts = [
@@ -24,6 +31,11 @@ class PurchaseItem extends Model
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(Purchase::class);
+    }
+
+    public function inventoryBalance(): BelongsTo
+    {
+        return $this->belongsTo(InventoryBalance::class);
     }
 
     public function assets(): HasMany

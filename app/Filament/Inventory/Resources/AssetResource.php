@@ -383,7 +383,7 @@ class AssetResource extends Resource
                                 ->content(fn (?Asset $record) => $record ? \App\Services\DepreciationService::calculate($record)['remaining_useful_life'] . ' Tahun' : '-'),
                         ])
                         ->columns(2)
-                        ->visible(fn (?Asset $record) => $record !== null),
+                        ->visible(fn (?Asset $record) => $record !== null && \App\Services\DepreciationService::calculate($record)['is_depreciable']),
                 ])->columnSpan(['lg' => 1]),
             ])
             ->columns(3);
@@ -451,11 +451,19 @@ class AssetResource extends Resource
                     ->label('PIC')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                // Protected Financial columns
-                Tables\Columns\TextColumn::make('purchase.total_price')
+                // Protected Financial columns — dual-path: new arch uses purchaseItem.unit_price, legacy uses purchase.total_price
+                Tables\Columns\TextColumn::make('purchaseItem.unit_price')
                     ->label('Harga Perolehan')
                     ->money('idr')
-                    ->sortable(),
+                    ->sortable()
+                    ->getStateUsing(function ($record): ?string {
+                        // New architecture: use unit_price from PurchaseItem
+                        if ($record->purchaseItem) {
+                            return $record->purchaseItem->unit_price;
+                        }
+                        // Legacy fallback: use total_price from AssetPurchase
+                        return $record->purchase?->total_price;
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('classification_id')

@@ -20,13 +20,19 @@ class DepreciationService
         // Path changed from asset->purchase->total_price to asset->purchaseItem->unit_price
         $cost = '0';
         $purchaseDate = null;
+        $isCapitalized = false;
         
         if ($asset->purchaseItem) {
             $cost = (string) ($asset->purchaseItem->unit_price ?? '0');
             $purchaseDate = $asset->purchaseItem->purchase ? $asset->purchaseItem->purchase->purchase_date : null;
+            // Trust the PurchaseItem's flag
+            $isCapitalized = (bool) $asset->purchaseItem->is_capitalized;
         } elseif ($asset->purchase) {
+            // Legacy Fallback (AssetPurchase)
             $cost = (string) ($asset->purchase->total_price ?? '0');
             $purchaseDate = $asset->purchase->purchase_date;
+            // Legacy data doesn't have is_capitalized flag, evaluate it centrally to prevent invalid depreciation
+            $isCapitalized = \App\Models\PurchaseItem::isCapitalizable((float) $cost);
         }
 
         $usefulLife = $asset->category ? (int) $asset->category->useful_life : 0;
@@ -38,8 +44,9 @@ class DepreciationService
         $costFloat = (float) $cost;
         $residualValueFloat = (float) $residualValue;
 
-        // Handle empty or zero
-        if ($costFloat <= 0 || !$purchaseDate || $usefulLife <= 0) {
+        // Return non-depreciable if not capitalized or invalid data
+        if (!$isCapitalized || $costFloat <= 0 || !$purchaseDate || $usefulLife <= 0) {
+            $reason = !$isCapitalized ? 'Barang tidak memenuhi syarat kapitalisasi (bukan aset tetap)' : 'Data pembelian/masa manfaat tidak valid atau 0';
             return [
                 'acquisition_cost' => number_format($costFloat, 2, '.', ''),
                 'book_value' => number_format($costFloat, 2, '.', ''),
@@ -48,7 +55,7 @@ class DepreciationService
                 'useful_life' => $usefulLife,
                 'remaining_useful_life' => $usefulLife,
                 'is_depreciable' => false,
-                'reason' => 'Data pembelian/masa manfaat tidak valid atau 0',
+                'reason' => $reason,
             ];
         }
 

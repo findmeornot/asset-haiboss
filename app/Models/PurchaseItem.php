@@ -14,8 +14,15 @@ class PurchaseItem extends Model
 
     public const CAPITALIZATION_THRESHOLD = 1000000;
 
-    public static function isCapitalizable(float $unitPrice): bool
+    public static function isCapitalizable(?float $unitPrice, ?Classification $classification = null): bool
     {
+        if ($unitPrice === null) {
+            return false;
+        }
+
+        if ($classification && strtolower($classification->slug) !== 'aset') {
+            return false;
+        }
         return $unitPrice >= self::CAPITALIZATION_THRESHOLD;
     }
 

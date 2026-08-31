@@ -21,21 +21,23 @@ class DepreciationService
         $cost = '0';
         $purchaseDate = null;
         $isCapitalized = false;
-        
         if ($asset->purchaseItem) {
-            $cost = (string) ($asset->purchaseItem->unit_price ?? '0');
+            $cost = $asset->purchaseItem->unit_price;
             $purchaseDate = $asset->purchaseItem->purchase ? $asset->purchaseItem->purchase->purchase_date : null;
             // Trust the PurchaseItem's flag
             $isCapitalized = (bool) $asset->purchaseItem->is_capitalized;
         } elseif ($asset->purchase) {
             // Legacy Fallback (AssetPurchase)
-            $cost = (string) ($asset->purchase->total_price ?? '0');
+            $totalPrice = $asset->purchase->total_price;
+            $quantity = max(1, $asset->purchase->quantity ?? 1);
+            $cost = $totalPrice !== null ? $totalPrice / $quantity : null;
+            
             $purchaseDate = $asset->purchase->purchase_date;
             // Legacy data doesn't have is_capitalized flag, evaluate it centrally to prevent invalid depreciation
-            $isCapitalized = \App\Models\PurchaseItem::isCapitalizable((float) $cost);
+            $isCapitalized = \App\Models\PurchaseItem::isCapitalizable($cost !== null ? (float) $cost : null, $asset->classification);
         }
 
-        $usefulLife = $asset->category ? (int) $asset->category->useful_life : 0;
+        $usefulLife = $asset->useful_life ?? ($asset->category ? (int) $asset->category->useful_life : 0);
         
         // Business Rules Configurations
         $residualValue = '0'; // Configurable if needed

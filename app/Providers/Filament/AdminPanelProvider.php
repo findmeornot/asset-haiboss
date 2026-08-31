@@ -45,6 +45,15 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->sidebarWidth('15rem')
             ->sidebarCollapsibleOnDesktop()
+            ->navigationGroups([
+                'Asset Management',
+                'PENGELOLAAN BARANG',
+                'Master Data',
+                'Transaksi',
+                'Reports',
+                'System Administration',
+                'User & Access',
+            ])
             ->maxContentWidth(Width::Full)
             ->renderHook(
                 \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_AFTER,

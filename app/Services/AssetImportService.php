@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Asset;
+use App\Services\SupplyBarcodeGenerator;
 use App\Models\InventoryBalance;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
@@ -394,6 +395,13 @@ class AssetImportService
                     $rowErrors[] = ['field' => 'Harga Perolehan', 'message' => "Harga Perolehan harus berupa angka. Nilai \"{$hargaRaw}\" tidak valid."];
                 } else {
                     $hargaVal = (float) $hargaNorm;
+                    if ($classification) {
+                        if (strtolower($classification->slug) === 'aset' && $hargaVal < 1000000) {
+                            $rowErrors[] = ['field' => 'Harga Perolehan', 'message' => 'Aset harus memiliki harga perolehan >= Rp1.000.000.'];
+                        } elseif (strtolower($classification->slug) === 'inventaris' && $hargaVal >= 1000000) {
+                            $rowErrors[] = ['field' => 'Harga Perolehan', 'message' => 'Inventaris harus memiliki harga perolehan < Rp1.000.000.'];
+                        }
+                    }
                 }
             }
 
@@ -507,8 +515,8 @@ class AssetImportService
             }
 
             $jumlah     = max(1, (int) trim($row['Jumlah'] ?? 1));
-            $unitPrice  = $hargaVal ?? 0;
-            $totalPrice = $unitPrice * $jumlah;
+            $unitPrice  = $hargaVal ?? null;
+            $totalPrice = $unitPrice !== null ? $unitPrice * $jumlah : null;
 
             // Notes (Keterangan) + unknown info suffix
             $notesRaw    = trim($row['Keterangan'] ?? '');
@@ -540,7 +548,7 @@ class AssetImportService
             // ──────────────────────────────────────────────────────────────
             // SUPPLY PATH: update InventoryBalance saldo — no Asset records
             // ──────────────────────────────────────────────────────────────
-            if ($category && $category->type === 'supply') {
+            if ($classification && strtolower($classification->slug) === 'persediaan-barang') {
                 // Create Purchase header for traceability
                 $purchase = Purchase::create([
                     'purchase_date' => $purchaseDate,
@@ -549,34 +557,69 @@ class AssetImportService
                 ]);
 
                 // firstOrCreate balance grouped by category + name + location
-                $balance = InventoryBalance::firstOrCreate(
-                    [
+                $balanceName = trim($row['Nama Barang'] ?? '');
+                $balance = InventoryBalance::where([
+                    'category_id' => $category->id,
+                    'name'        => $balanceName,
+                    'location_id' => $location?->id,
+                ])->first();
+
+                $isNewBalance = false;
+
+                if (!$balance) {
+                    $balance = InventoryBalance::create([
                         'category_id' => $category->id,
-                        'name'        => trim($row['Nama Barang'] ?? ''),
+                        'name'        => $balanceName,
                         'location_id' => $location?->id,
-                    ],
-                    [
                         'campus_id' => $campus?->id,
                         'quantity'  => 0,
-                    ]
-                );
+                        'master_barcode' => SupplyBarcodeGenerator::generateMaster(),
+                        'latest_sequence' => 0,
+                        'has_pure_master_unit' => false,
+                    ]);
+                    $isNewBalance = true;
+                }
 
                 // Add purchased quantity to the running balance
                 $balance->increment('quantity', $jumlah);
 
                 // Record purchase item linked to the balance
-                PurchaseItem::create([
+                $purchaseItem = PurchaseItem::create([
                     'purchase_id'        => $purchase->id,
                     'inventory_balance_id' => $balance->id,
                     'category_id'        => $category->id,
                     'classification_id'  => $classification?->id,
-                    'name'               => trim($row['Nama Barang'] ?? ''),
+                    'name'               => $balanceName,
                     'quantity'           => $jumlah,
                     'unit'               => trim($row['Satuan'] ?? '') ?: null,
                     'unit_price'         => $unitPrice,
                     'total_price'        => $totalPrice,
                     'is_capitalized'     => false, // Supply is never capitalized
                 ]);
+
+                // BARCODE LOGIC
+                if ($isNewBalance && $jumlah === 1) {
+                    $balance->update(['has_pure_master_unit' => true]);
+                    $balance->units()->create([
+                        'purchase_item_id' => $purchaseItem->id,
+                        'sub_barcode' => $balance->master_barcode,
+                        'status' => 'available'
+                    ]);
+                } else {
+                    $subBarcodes = SupplyBarcodeGenerator::generateSub($balance, $jumlah);
+                    $unitRecords = [];
+                    foreach ($subBarcodes as $sb) {
+                        $unitRecords[] = [
+                            'inventory_balance_id' => $balance->id,
+                            'purchase_item_id' => $purchaseItem->id,
+                            'sub_barcode' => $sb,
+                            'status' => 'available',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
+                    \App\Models\InventoryBalanceUnit::insert($unitRecords);
+                }
 
                 $count += $jumlah; // Count as stock units added
                 continue;
@@ -603,8 +646,8 @@ class AssetImportService
                 'unit'              => trim($row['Satuan'] ?? '') ?: null,
                 'unit_price'        => $unitPrice,
                 'total_price'       => $totalPrice,
-                // Business Rule: Capitalization based on UNIT PRICE >= Rp1.000.000
-                'is_capitalized'    => PurchaseItem::isCapitalizable($unitPrice),
+                // Business Rule: Capitalization based on UNIT PRICE >= Rp1.000.000 and classification ASET
+                'is_capitalized'    => PurchaseItem::isCapitalizable($unitPrice, $classification),
             ]);
 
             // Create N individual Asset records — 1 record = 1 physical unit

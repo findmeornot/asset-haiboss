@@ -16,7 +16,7 @@ class FinancialPrecisionTest extends TestCase
 
     public function test_depreciation_with_precision_safe_values()
     {
-        $classification = \App\Models\Classification::factory()->create();
+        $classification = \App\Models\Classification::factory()->create(['name' => 'ASET', 'slug' => 'aset']);
         $category = Category::factory()->create(['useful_life' => 8]);
         $category->classifications()->attach($classification);
         
@@ -54,7 +54,7 @@ class FinancialPrecisionTest extends TestCase
 
     public function test_land_no_depreciation()
     {
-        $classification = \App\Models\Classification::factory()->create();
+        $classification = \App\Models\Classification::factory()->create(['name' => 'ASET', 'slug' => 'aset']);
         $category = Category::factory()->create(['useful_life' => 0]);
         $category->classifications()->attach($classification);
         
@@ -82,7 +82,7 @@ class FinancialPrecisionTest extends TestCase
 
     public function test_division_precision_no_drift()
     {
-        $classification = \App\Models\Classification::factory()->create();
+        $classification = \App\Models\Classification::factory()->create(['name' => 'ASET', 'slug' => 'aset']);
         $category = Category::factory()->create(['useful_life' => 3]);
         $category->classifications()->attach($classification);
         
@@ -93,7 +93,7 @@ class FinancialPrecisionTest extends TestCase
         
         AssetPurchase::factory()->create([
             'asset_id' => $asset->id,
-            'total_price' => '100.00',
+            'total_price' => '1000000.00',
             'purchase_date' => Carbon::now()->subYears(1)->format('Y-m-d'),
         ]);
 
@@ -101,20 +101,20 @@ class FinancialPrecisionTest extends TestCase
 
         $financials = DepreciationService::calculate($asset);
 
-        $this->assertEquals('100.00', $financials['acquisition_cost']);
-        // 100 / 3 = 33.33 in BCMath scale 2
-        $this->assertEquals('33.33', $financials['annual_depreciation']);
+        $this->assertEquals('1000000.00', $financials['acquisition_cost']);
+        // 1000000 / 3 = 333333.33 in BCMath scale 2
+        $this->assertEquals('333333.33', $financials['annual_depreciation']);
         
         // 1 year elapsed
-        $this->assertEquals('33.33', $financials['accumulated_depreciation']);
+        $this->assertEquals('333333.33', $financials['accumulated_depreciation']);
         
-        // 100.00 - 33.33 = 66.67
-        $this->assertEquals('66.67', $financials['book_value']);
+        // 1000000.00 - 333333.33 = 666666.67
+        $this->assertEquals('666666.67', $financials['book_value']);
     }
 
     public function test_fully_depreciated_asset()
     {
-        $classification = \App\Models\Classification::factory()->create();
+        $classification = \App\Models\Classification::factory()->create(['name' => 'ASET', 'slug' => 'aset']);
         $category = Category::factory()->create(['useful_life' => 5]);
         $category->classifications()->attach($classification);
         
@@ -126,7 +126,7 @@ class FinancialPrecisionTest extends TestCase
         // Bought 10 years ago
         AssetPurchase::factory()->create([
             'asset_id' => $asset->id,
-            'total_price' => '100000.00',
+            'total_price' => '1000000.00',
             'purchase_date' => Carbon::now()->subYears(10)->format('Y-m-d'),
         ]);
 
@@ -134,8 +134,8 @@ class FinancialPrecisionTest extends TestCase
 
         $financials = DepreciationService::calculate($asset);
 
-        // Should not depreciate below 0 or have > 100000 accumulated
-        $this->assertEquals('100000.00', $financials['accumulated_depreciation']);
+        // Should not depreciate below 0 or have > 1000000 accumulated
+        $this->assertEquals('1000000.00', $financials['accumulated_depreciation']);
         $this->assertEquals('0.00', $financials['book_value']);
         $this->assertEquals(0, $financials['remaining_useful_life']);
     }

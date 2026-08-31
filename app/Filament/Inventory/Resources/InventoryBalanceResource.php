@@ -18,6 +18,7 @@ use Filament\Notifications\Notification;
 class InventoryBalanceResource extends Resource
 {
     protected static ?string $model = InventoryBalance::class;
+    protected static ?int $navigationSort = 4;
 
     public static function getNavigationIcon(): string | \Illuminate\Contracts\Support\Htmlable | null
     {
@@ -26,17 +27,17 @@ class InventoryBalanceResource extends Resource
 
     public static function getNavigationGroup(): string | \UnitEnum | null
     {
-        return 'Asset Management';
+        return 'PENGELOLAAN BARANG';
     }
 
     public static function getModelLabel(): string
     {
-        return 'Stok Persediaan';
+        return 'Persediaan';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Stok Persediaan';
+        return 'Persediaan';
     }
 
     public static function form(Schema $schema): Schema
@@ -75,6 +76,7 @@ class InventoryBalanceResource extends Resource
                         default => 'success',
                     }),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])
@@ -84,39 +86,61 @@ class InventoryBalanceResource extends Resource
                     ->icon('heroicon-o-minus-circle')
                     ->color('warning')
                     ->form([
-                        Forms\Components\TextInput::make('quantity')
-                            ->label('Jumlah yang Digunakan')
-                            ->numeric()
-                            ->integer()
-                            ->minValue(1)
-                            ->maxValue(fn (InventoryBalance $record) => $record->quantity)
-                            ->required(),
+                        Forms\Components\Select::make('sub_barcodes')
+                            ->label('Scan/Pilih Barcode Unit')
+                            ->multiple()
+                            ->searchable()
+                            ->options(fn (InventoryBalance $record) => 
+                                $record->units()->where('status', 'available')->pluck('sub_barcode', 'sub_barcode')
+                            )
+                            ->required()
+                            ->minItems(1)
+                            ->maxItems(fn (InventoryBalance $record) => $record->quantity)
+                            ->helperText('Pilih unit spesifik yang akan dikeluarkan.'),
                         Forms\Components\Textarea::make('reason')
                             ->label('Alasan / Tujuan Penggunaan')
                             ->required(),
                     ])
                     ->action(function (InventoryBalance $record, array $data) {
-                        $quantity = (int) $data['quantity'];
+                        $subBarcodes = $data['sub_barcodes'];
+                        $quantity = count($subBarcodes);
                         $reason = $data['reason'] ?? '';
 
                         try {
-                            DB::transaction(function () use ($record, $quantity, $reason) {
-                                // 1. Pessimistic Locking
+                            DB::transaction(function () use ($record, $subBarcodes, $quantity, $reason) {
+                                // 1. Pessimistic Locking on Balance
                                 $lockedBalance = InventoryBalance::where('id', $record->id)->lockForUpdate()->first();
 
-                                // 2. Re-check quantity after locking
-                                if ($lockedBalance->quantity < $quantity) {
-                                    throw new \Exception("Stok tidak mencukupi. Stok saat ini: {$lockedBalance->quantity}");
+                                // 2. Lock and check units
+                                $lockedUnits = \App\Models\InventoryBalanceUnit::where('inventory_balance_id', $record->id)
+                                    ->whereIn('sub_barcode', $subBarcodes)
+                                    ->lockForUpdate()
+                                    ->get();
+                                
+                                if ($lockedUnits->count() !== $quantity) {
+                                    throw new \Exception("Beberapa barcode tidak valid atau bukan milik master barang ini.");
                                 }
+                                
+                                $usedUnits = $lockedUnits->where('status', '!=', 'available');
+                                if ($usedUnits->count() > 0) {
+                                    throw new \Exception("Beberapa barcode sudah digunakan (Stock OUT) atau tidak tersedia.");
+                                }
+
+                                // 3. Update Units
+                                \App\Models\InventoryBalanceUnit::whereIn('id', $lockedUnits->pluck('id'))->update(['status' => 'used']);
 
                                 $oldQuantity = $lockedBalance->quantity;
                                 $newQuantity = $oldQuantity - $quantity;
+                                
+                                if ($newQuantity < 0) {
+                                    throw new \Exception("Stok tidak mencukupi. Stok saat ini: {$oldQuantity}");
+                                }
 
-                                // 3. Decrement
+                                // 4. Decrement Balance
                                 $lockedBalance->quantity = $newQuantity;
                                 $lockedBalance->save();
 
-                                // 4. Audit Trail
+                                // 5. Audit Trail
                                 AuditLog::create([
                                     'action' => AuditAction::UPDATED,
                                     'auditable_type' => InventoryBalance::class,
@@ -127,6 +151,7 @@ class InventoryBalanceResource extends Resource
                                     'metadata' => [
                                         'reason' => $reason,
                                         'usage_quantity' => $quantity,
+                                        'sub_barcodes' => $subBarcodes,
                                         'transaction_type' => 'stock_out'
                                     ],
                                 ]);
@@ -134,7 +159,7 @@ class InventoryBalanceResource extends Resource
 
                             Notification::make()
                                 ->title('Berhasil')
-                                ->body("Stok berhasil dikeluarkan sebanyak {$quantity}.")
+                                ->body("Stok berhasil dikeluarkan sebanyak {$quantity} unit.")
                                 ->success()
                                 ->send();
                         } catch (\Exception $e) {

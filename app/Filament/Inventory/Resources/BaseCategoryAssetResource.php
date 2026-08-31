@@ -39,7 +39,7 @@ abstract class BaseCategoryAssetResource extends Resource
 
     public static function getNavigationGroup(): string|\UnitEnum|null
     {
-        return 'Kategori';
+        return 'PENGELOLAAN BARANG';
     }
 
     public static function canCreate(): bool
@@ -129,6 +129,7 @@ abstract class BaseCategoryAssetResource extends Resource
                         return $record->purchase?->total_price;
                     }),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('category_id')
                     ->label('Kategori')

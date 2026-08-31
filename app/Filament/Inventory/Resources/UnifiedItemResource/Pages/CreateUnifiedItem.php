@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Filament\Inventory\Resources\AssetResource\Pages;
+namespace App\Filament\Inventory\Resources\UnifiedItemResource\Pages;
 
-use App\Filament\Inventory\Resources\AssetResource;
+use App\Filament\Inventory\Resources\UnifiedItemResource;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use App\Services\InventoryNumberGenerator;
 
-class CreateAsset extends CreateRecord
+class CreateUnifiedItem extends CreateRecord
 {
-    protected static string $resource = AssetResource::class;
+    protected static string $resource = UnifiedItemResource::class;
 
     protected ?array $purchaseData = null;
 
@@ -70,8 +70,26 @@ class CreateAsset extends CreateRecord
             }
         }
 
+        // Validate threshold before creating
+        $unitPrice = isset($this->purchaseData['unit_price']) && $this->purchaseData['unit_price'] !== '' ? (float) $this->purchaseData['unit_price'] : null;
+        if ($unitPrice !== null) {
+            $classification = \App\Models\Classification::find($data['classification_id'] ?? null);
+            if ($classification && strtolower($classification->slug) === 'aset' && $unitPrice < 1000000) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'data.purchase_data.unit_price' => 'Aset harus memiliki harga perolehan >= Rp1.000.000.',
+                ]);
+            }
+            if ($classification && strtolower($classification->slug) === 'inventaris' && $unitPrice >= 1000000) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'data.purchase_data.unit_price' => 'Inventaris harus memiliki harga perolehan < Rp1.000.000.',
+                ]);
+            }
+        }
+
         return $data;
     }
+
+    protected ?string $createdClassificationSlug = null;
 
     protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
     {
@@ -79,11 +97,15 @@ class CreateAsset extends CreateRecord
             $quantity = isset($this->purchaseData['quantity']) ? (int) $this->purchaseData['quantity'] : 1;
             if ($quantity < 1) $quantity = 1;
 
-            $unitPrice  = isset($this->purchaseData['unit_price'])  ? (float) $this->purchaseData['unit_price']  : 0;
-            $totalPrice = isset($this->purchaseData['total_price'])  ? (float) $this->purchaseData['total_price'] : ($unitPrice * $quantity);
+            $unitPrice  = isset($this->purchaseData['unit_price']) && $this->purchaseData['unit_price'] !== '' ? (float) $this->purchaseData['unit_price']  : null;
+            $totalPrice = $unitPrice !== null ? $unitPrice * $quantity : null;
             $purchaseDate = $this->purchaseData['purchase_date'] ?? null;
             $ownership    = $this->purchaseData['ownership']     ?? 'company';
             $unit         = $this->purchaseData['unit']          ?? null;
+
+            // Pre-fetch classification and category objects for inventory number generation
+            $classification = \App\Models\Classification::find($data['classification_id'] ?? null);
+            $category       = \App\Models\Category::find($data['category_id']       ?? null);
 
             // 1. Create Purchase header
             $purchase = \App\Models\Purchase::create([
@@ -92,9 +114,7 @@ class CreateAsset extends CreateRecord
                 'total_amount'  => $totalPrice,
             ]);
 
-            // Pre-fetch classification and category objects for inventory number generation
-            $classification = \App\Models\Classification::find($data['classification_id'] ?? null);
-            $category       = \App\Models\Category::find($data['category_id']       ?? null);
+            $this->createdClassificationSlug = $classification ? strtolower($classification->slug) : null;
 
             $purchaseItemData = [
                 'purchase_id'       => $purchase->id,
@@ -134,6 +154,9 @@ class CreateAsset extends CreateRecord
                             'master_barcode' => \App\Services\SupplyBarcodeGenerator::generateMaster(),
                             'latest_sequence' => 0,
                             'has_pure_master_unit' => false,
+                            'pic_id' => $data['pic_id'] ?? null,
+                            'status' => $data['status'] ?? 'stock',
+                            'notes' => $data['notes'] ?? null,
                         ]
                     );
                     $isNewBalance = true;
@@ -171,10 +194,7 @@ class CreateAsset extends CreateRecord
                     \App\Models\InventoryBalanceUnit::insert($unitRecords);
                 }
 
-                // Return an unsaved Asset instance to satisfy Filament's Model return type contract.
-                // afterCreate() detects isSupplyCreation=true and skips any asset-level logic.
-                // getRedirectUrl() already returns the index page, so no record key is required.
-                return new \App\Models\Asset();
+                return new \App\Models\UnifiedItem();
             }
 
             // 2b. Asset / Inventory path: create PurchaseItem, then N individual Asset records
@@ -192,14 +212,14 @@ class CreateAsset extends CreateRecord
                 $assetData['purchase_item_id'] = $purchaseItem->id;
                 // Barcode is generated automatically by AssetObserver::creating()
 
-                $asset = static::getModel()::create($assetData);
+                $asset = \App\Models\Asset::create($assetData);
 
                 if ($i === 0) {
                     $firstAsset = $asset;
                 }
             }
 
-            return $firstAsset;
+            return new \App\Models\UnifiedItem();
         });
     }
 
@@ -215,6 +235,14 @@ class CreateAsset extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
+        if ($this->createdClassificationSlug === 'aset') {
+            return \App\Filament\Inventory\Resources\AssetCategoryResource::getUrl('index');
+        } elseif ($this->createdClassificationSlug === 'inventaris') {
+            return \App\Filament\Inventory\Resources\InventoryCategoryResource::getUrl('index');
+        } elseif ($this->createdClassificationSlug === 'persediaan-barang') {
+            return \App\Filament\Inventory\Resources\InventoryBalanceResource::getUrl('index');
+        }
+
         return $this->getResource()::getUrl('index');
     }
 }

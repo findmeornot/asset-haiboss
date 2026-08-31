@@ -12,6 +12,11 @@ class ListInventoryBalances extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            \Filament\Actions\Action::make('create')
+                ->label('Tambah Barang')
+                ->icon('heroicon-o-plus')
+                ->url(fn () => \App\Filament\Inventory\Resources\UnifiedItemResource::getUrl('create')),
+        ];
     }
 }

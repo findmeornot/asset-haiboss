@@ -77,6 +77,41 @@ class EditAsset extends EditRecord
                 unset($this->purchaseData['quantity']);
             }
 
+            // Enforce Immutability & Boundary Rules
+            $oldPrice = null;
+            if ($this->record->purchaseItem) {
+                $oldPrice = $this->record->purchaseItem->unit_price;
+            } elseif ($this->record->purchase) {
+                $oldPrice = $this->record->purchase->total_price !== null ? $this->record->purchase->total_price / max(1, $this->record->purchase->quantity ?? 1) : null;
+            }
+
+            $newPrice = isset($this->purchaseData['unit_price']) && $this->purchaseData['unit_price'] !== '' ? (float) $this->purchaseData['unit_price'] : null;
+
+            if ($oldPrice !== null) {
+                // Immutability rule: if already has price, it cannot be changed
+                if ($newPrice !== null && $newPrice != $oldPrice) {
+                    unset($this->purchaseData['unit_price']);
+                    unset($this->purchaseData['total_price']);
+                }
+            } else {
+                // If it was null, and now they are setting a price, validate boundary
+                if ($newPrice !== null) {
+                    $classification = $this->record->classification;
+                    if ($classification && strtolower($classification->slug) === 'aset' && $newPrice < 1000000) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'purchase_data.unit_price' => 'Aset harus memiliki harga perolehan >= Rp1.000.000.',
+                        ]);
+                    }
+                    if ($classification && strtolower($classification->slug) === 'inventaris' && $newPrice >= 1000000) {
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'purchase_data.unit_price' => 'Inventaris harus memiliki harga perolehan < Rp1.000.000.',
+                        ]);
+                    }
+                    // Price is valid, allow it to be set
+                    $this->purchaseData['unit_price'] = $newPrice;
+                }
+            }
+
             unset($data['purchase_data']);
         }
 
@@ -115,12 +150,12 @@ class EditAsset extends EditRecord
                 // Only update unit_price and total_price on PurchaseItem
                 // This will affect ALL assets under this PurchaseItem
                 $purchaseItemUpdates = [];
-                if (isset($this->purchaseData['unit_price'])) {
+                if (array_key_exists('unit_price', $this->purchaseData)) {
                     $purchaseItemUpdates['unit_price'] = $this->purchaseData['unit_price'];
                     // Recalculate total_price based on the PurchaseItem's original quantity
-                    $purchaseItemUpdates['total_price'] = $this->purchaseData['unit_price'] * $this->record->purchaseItem->quantity;
+                    $purchaseItemUpdates['total_price'] = $this->purchaseData['unit_price'] !== null ? $this->purchaseData['unit_price'] * $this->record->purchaseItem->quantity : null;
                     // Re-evaluate capitalization rule
-                    $purchaseItemUpdates['is_capitalized'] = \App\Models\PurchaseItem::isCapitalizable($this->purchaseData['unit_price']);
+                    $purchaseItemUpdates['is_capitalized'] = \App\Models\PurchaseItem::isCapitalizable($this->purchaseData['unit_price'], $this->record->classification);
                 }
                 if (isset($this->purchaseData['unit'])) {
                     $purchaseItemUpdates['unit'] = $this->purchaseData['unit'];
@@ -136,7 +171,7 @@ class EditAsset extends EditRecord
                     if (isset($this->purchaseData['ownership'])) {
                         $purchaseUpdates['ownership'] = $this->purchaseData['ownership'];
                     }
-                    if (isset($this->purchaseData['purchase_date'])) {
+                    if (array_key_exists('purchase_date', $this->purchaseData)) {
                         $purchaseUpdates['purchase_date'] = $this->purchaseData['purchase_date'];
                     }
                     if (isset($purchaseItemUpdates['total_price'])) {

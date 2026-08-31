@@ -20,6 +20,7 @@ class InventoryBalance extends Model
         return $this->belongsTo(Campus::class);
     }
 
+    public function pic(): \Illuminate\Database\Eloquent\Relations\BelongsTo { return $this->belongsTo(User::class, 'pic_id'); }
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
@@ -28,5 +29,10 @@ class InventoryBalance extends Model
     public function purchaseItems(): HasMany
     {
         return $this->hasMany(PurchaseItem::class);
+    }
+
+    public function units(): HasMany
+    {
+        return $this->hasMany(InventoryBalanceUnit::class);
     }
 }

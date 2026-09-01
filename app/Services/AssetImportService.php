@@ -583,6 +583,7 @@ class AssetImportService
                 $balance = InventoryBalance::where([
                     'category_id' => $category->id,
                     'name'        => $balanceName,
+                    'brand'       => trim($row['Merk/Tipe'] ?? ''),
                     'location_id' => $location?->id,
                 ])->first();
 
@@ -592,6 +593,7 @@ class AssetImportService
                     $balance = InventoryBalance::create([
                         'category_id' => $category->id,
                         'name'        => $balanceName,
+                        'brand'       => trim($row['Merk/Tipe'] ?? ''),
                         'location_id' => $location?->id,
                         'campus_id' => $campus?->id,
                         'quantity'  => 0,

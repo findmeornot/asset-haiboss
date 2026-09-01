@@ -53,6 +53,10 @@ class InventoryBalanceResource extends Resource
                     ->label('Nama Barang')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('brand')
+                    ->label('Merk/Tipe')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Kategori')
                     ->searchable()

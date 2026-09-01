@@ -117,6 +117,7 @@ class CreateAsset extends CreateRecord
                     [
                         'category_id' => $data['category_id'],
                         'name'        => $data['name'] ?? 'Asset Baru',
+                        'brand'       => $data['brand'] ?? null,
                         'location_id' => $data['location_id'] ?? null,
                     ]
                 )->first();
@@ -128,6 +129,7 @@ class CreateAsset extends CreateRecord
                         [
                             'category_id' => $data['category_id'],
                             'name'        => $data['name'] ?? 'Asset Baru',
+                            'brand'       => $data['brand'] ?? null,
                             'location_id' => $data['location_id'] ?? null,
                             'campus_id' => $data['campus_id'] ?? null,
                             'quantity'  => 0,

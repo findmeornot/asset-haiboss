@@ -112,7 +112,6 @@ class AssetResource extends Resource
                                 Components\TextInput::make('brand')->label('Merk/Tipe Baru')->required()
                             ])
                             ->createOptionUsing(fn (array $data) => $data['brand'])
-                            ->visible(fn (callable $get) => !$isPersediaan($get))
                             ->columnSpan(['default' => 1, 'md' => 2]),
                     ])
                     ->columns(['default' => 1, 'md' => 2])

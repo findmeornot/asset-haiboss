@@ -254,11 +254,11 @@
                         <x-filament::input
                             type="text"
                             id="usb-scanner-input"
-                            placeholder="Scan atau ketik barcode..."
+                            placeholder="Scan atau ketik nomor inventaris..."
                             autocomplete="off"
                         />
                     </x-filament::input.wrapper>
-                    <p class="text-[11px] text-gray-500 mt-1.5">Scanner USB akan mengisi barcode secara otomatis.</p>
+                    <p class="text-[11px] text-gray-500 mt-1.5">Scanner USB akan mengisi nomor inventaris secara otomatis.</p>
                 </div>
             </div>
 
@@ -296,18 +296,6 @@
                         <!-- TABEL INFORMASI SINGKAT -->
                         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 text-sm space-y-3 bg-gray-50 dark:bg-gray-800/30">
                             <div class="flex items-start">
-                                <span class="w-24 shrink-0 text-gray-500">Barcode</span>
-                                <span class="font-medium text-gray-900 dark:text-white">{{ $scannedAsset->barcode ?? '-' }}</span>
-                            </div>
-                            <div class="flex items-start">
-                                <span class="w-24 shrink-0 text-gray-500">Merk/Tipe</span>
-                                <span class="font-medium text-gray-900 dark:text-white">{{ $scannedAsset->brand ?? '-' }}</span>
-                            </div>
-                            <div class="flex items-start">
-                                <span class="w-24 shrink-0 text-gray-500">No. Seri</span>
-                                <span class="font-medium text-gray-900 dark:text-white">{{ $scannedAsset->serial_number ?? '-' }}</span>
-                            </div>
-                            <div class="flex items-start">
                                 <span class="w-24 shrink-0 text-gray-500">Status</span>
                                 <span class="font-medium text-gray-900 dark:text-white">
                                     <x-filament::badge color="primary">
@@ -325,34 +313,15 @@
                             </div>
                         </div>
 
-                        <!-- UPLOAD FOTO SECTION -->
-                        <form wire:submit="savePhotos" class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Upload Foto Fisik</h3>
-                            
-                            {{ $this->form }}
-
-                            <div class="mt-4 flex gap-3">
-                                <x-filament::button
-                                    type="submit"
-                                    color="success"
-                                    size="md"
-                                    icon="heroicon-o-arrow-up-tray"
-                                    class="flex-1 justify-center font-bold"
-                                >
-                                    Simpan Foto
-                                </x-filament::button>
-                            </div>
-                        </form>
-
                         <!-- TOMBOL AKSI UTAMA -->
                         <x-filament::button
                             tag="a"
                             href="{{ \App\Filament\Inventory\Resources\AssetResource::getUrl('view', ['record' => $scannedAsset]) }}"
-                            color="gray"
-                            size="md"
+                            color="primary"
+                            size="lg"
                             class="w-full justify-center font-bold"
                         >
-                            Lihat Detail Penuh Aset
+                            Lihat Detail Aset
                         </x-filament::button>
                     </div>
                 @endif

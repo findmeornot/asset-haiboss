@@ -44,16 +44,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->databaseNotifications()
             ->sidebarWidth('15rem')
-            ->sidebarCollapsibleOnDesktop()
-            ->navigationGroups([
-                'Asset Management',
-                'PENGELOLAAN BARANG',
-                'Master Data',
-                'Transaksi',
-                'Reports',
-                'System Administration',
-                'User & Access',
-            ])
             ->maxContentWidth(Width::Full)
             ->renderHook(
                 \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_AFTER,
@@ -77,10 +67,7 @@ class AdminPanelProvider extends PanelProvider
             // Menyatukan menu inventaris ke dalam panel admin
             ->discoverResources(in: app_path('Filament/Inventory/Resources'), for: 'App\Filament\Inventory\Resources')
             ->discoverPages(in: app_path('Filament/Inventory/Pages'), for: 'App\Filament\Inventory\Pages')
-            ->widgets([
-                \App\Filament\Inventory\Widgets\AssetStatusChart::class,
-                \App\Filament\Inventory\Widgets\LatestAssetMovements::class,
-            ])
+            ->discoverWidgets(in: app_path('Filament/Inventory/Widgets'), for: 'App\Filament\Inventory\Widgets')
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

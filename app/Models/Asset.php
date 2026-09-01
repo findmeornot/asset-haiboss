@@ -2,17 +2,14 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Traits\HasRouteUlid;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
-
-#[ObservedBy(\App\Observers\AssetObserver::class)]
 class Asset extends Model {
-    use HasRouteUlid, SoftDeletes, HasFactory;
+    use HasRouteUlid;
+
+    use SoftDeletes;
     protected $guarded = [];
 
     protected static function booted(): void
@@ -53,8 +50,7 @@ class Asset extends Model {
     public function campus(): BelongsTo { return $this->belongsTo(Campus::class); }
     public function location(): BelongsTo { return $this->belongsTo(Location::class); }
     public function pic(): BelongsTo { return $this->belongsTo(Employee::class, 'pic_id'); }
-    public function purchase(): HasOne { return $this->hasOne(AssetPurchase::class); } // Legacy
-    public function purchaseItem(): BelongsTo { return $this->belongsTo(PurchaseItem::class); }
+    public function purchase(): HasOne { return $this->hasOne(AssetPurchase::class); }
     public function financial(): HasOne { return $this->hasOne(AssetFinancial::class); }
     public function documents(): HasMany { return $this->hasMany(AssetDocument::class); }
     public function photos(): HasMany { return $this->hasMany(AssetPhoto::class); }

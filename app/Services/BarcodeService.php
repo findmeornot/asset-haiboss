@@ -7,7 +7,7 @@ use Picqer\Barcode\BarcodeGeneratorSVG;
 class BarcodeService
 {
     /**
-     * Generate an SVG barcode for the given value (usually the 6-digit permanent Barcode Number).
+     * Generate an SVG barcode for the given value (usually Inventory Number).
      *
      * @param string $value
      * @return string

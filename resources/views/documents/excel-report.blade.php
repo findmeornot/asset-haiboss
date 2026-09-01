@@ -36,7 +36,7 @@
                     <th style="background-color: #d9d9d9;">Status</th>
                     <th style="background-color: #d9d9d9;">Total Item</th>
                 @else
-                    {{-- 17 kolom laporan aset sesuai requirement Kak Qory + Kondisi --}}
+                    {{-- 17 kolom laporan aset sesuai requirement Kak Qory --}}
                     <th style="background-color: #d9d9d9;">Kode</th>
                     <th style="background-color: #d9d9d9;">Kategori Akuntansi</th>
                     <th style="background-color: #d9d9d9;">Kategori</th>
@@ -50,7 +50,6 @@
                     <th style="background-color: #d9d9d9;">Gedung</th>
                     <th style="background-color: #d9d9d9;">Ruangan</th>
                     <th style="background-color: #d9d9d9;">PIC</th>
-                    <th style="background-color: #d9d9d9;">Status</th>
                     <th style="background-color: #d9d9d9;">Kondisi</th>
                     <th style="background-color: #d9d9d9;">Harga Perolehan</th>
                     <th style="background-color: #d9d9d9;">Keterangan</th>
@@ -75,37 +74,9 @@
                         <td>{{ $row->start_date }}</td>
                         <td>{{ $row->status }}</td>
                         <td>{{ $row->items->count() }}</td>
-                    @elseif($type === 'persediaan_only')
-                        {{-- Rendering for InventoryBalance --}}
-                        <td>{{ $row->master_barcode ?? '-' }}</td>
-                        <td>Persediaan Barang</td>
-                        <td>{{ $row->category->name ?? '-' }}</td>
-                        <td>{{ $row->name }}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>{{ $row->quantity ?? '-' }}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>{{ $row->campus->name ?? '-' }}</td>
-                        <td>{{ $row->location->name ?? '-' }}</td>
-                        <td>{{ $row->pic->name ?? '-' }}</td>
-                        <td>{{ match($row->status) {
-                            'stock' => 'Stok (Gudang)',
-                            'active' => 'Aktif / Digunakan',
-                            default => $row->status ?? '-',
-                        } }}</td>
-                        <td>{{ match($row->kondisi) {
-                            'good' => 'Baik',
-                            'minor_damage' => 'Rusak Ringan',
-                            'major_damage' => 'Rusak Berat',
-                            default => $row->kondisi ?? '-',
-                        } }}</td>
-                        <td>-</td>
-                        <td>{{ $row->notes ?? '-' }}</td>
                     @else
                         {{--
-                            Mapping 18 kolom:
+                            Mapping 17 kolom:
                             1.  No              → index + 1 (sudah di atas)
                             2.  Kode            → inventory_number
                             3.  Kat. Akuntansi  → classification.name
@@ -120,10 +91,9 @@
                             12. Gedung          → campus.name  (campus_id = Gedung di sistem)
                             13. Ruangan         → location.name
                             14. PIC             → pic.name
-                            15. Status          → status
-                            16. Kondisi         → kondisi
-                            17. Harga Perolehan → purchaseItem.unit_price
-                            18. Keterangan      → notes
+                            15. Kondisi         → status
+                            16. Harga Perolehan → purchase.unit_price
+                            17. Keterangan      → notes
                         --}}
 
                         {{-- 2. Kode --}}
@@ -145,13 +115,13 @@
                         <td>{{ $row->serial_number ?? '-' }}</td>
 
                         {{-- 8. Jumlah --}}
-                        <td>{{ $row->purchaseItem->quantity ?? ($row->purchase->quantity ?? '-') }}</td>
+                        <td>{{ $row->purchase->quantity ?? '-' }}</td>
 
                         {{-- 9. Satuan --}}
                         <td>{{ $row->unit ?? '-' }}</td>
 
                         {{-- 10. Tahun Perolehan (ambil tahun dari purchase_date) --}}
-                        <td>{{ ($date = ($row->purchaseItem?->purchase?->purchase_date ?? $row->purchase?->purchase_date)) ? \Carbon\Carbon::parse($date)->format('Y') : '-' }}</td>
+                        <td>{{ $row->purchase?->purchase_date ? \Carbon\Carbon::parse($row->purchase->purchase_date)->format('Y') : '-' }}</td>
 
                         {{-- 11. Sumber Dana (value internal dipertahankan, label disesuaikan) --}}
                         <td>{{ match($row->ownership) {
@@ -170,40 +140,24 @@
                         {{-- 14. PIC --}}
                         <td>{{ $row->pic->name ?? '-' }}</td>
 
-                        {{-- 15. Status --}}
+                        {{-- 15. Kondisi --}}
                         <td>{{ match($row->status) {
-                            'stock'                    => 'Stok (Gudang)',
+                            'stock'                    => 'Stok Tersedia',
                             'active'                   => 'Aktif / Digunakan',
                             'borrowed'                 => 'Dipinjam',
                             'maintenance'              => 'Dalam Perbaikan',
+                            'minor_damage'             => 'Rusak Ringan',
+                            'major_damage'             => 'Rusak Berat',
                             'lost'                     => 'Hilang',
                             'sold'                     => 'Terjual',
-                            'disposed'                 => 'Dihapuskan / Musnah',
                             'administratively_deleted' => 'Penghapusan Administratif',
                             'destroyed'                => 'Dimusnahkan',
                             default                    => $row->status ?? '-',
                         } }}</td>
 
-                        {{-- 16. Kondisi --}}
-                        <td>{{ match($row->kondisi) {
-                            'good'                     => 'Baik',
-                            'minor_damage'             => 'Rusak Ringan',
-                            'major_damage'             => 'Rusak Berat',
-                            default                    => $row->kondisi ?? '-',
-                        } }}</td>
-
                         {{-- 16. Harga Perolehan --}}
                         @if($canViewFinancial)
-                            <td>
-                                @php
-                                    $unitPrice = $row->purchaseItem?->unit_price ?? ($row->purchase?->total_price !== null ? $row->purchase->total_price / max(1, $row->purchase->quantity ?? 1) : null);
-                                @endphp
-                                @if($unitPrice === null)
-                                    Belum Diisi
-                                @else
-                                    {{ number_format($unitPrice, 0, ',', '.') }}
-                                @endif
-                            </td>
+                            <td>{{ $row->purchase?->unit_price ? number_format($row->purchase->unit_price, 0, ',', '.') : '-' }}</td>
                         @else
                             <td>-</td>
                         @endif

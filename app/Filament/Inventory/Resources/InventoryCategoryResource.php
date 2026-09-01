@@ -10,8 +10,8 @@ use App\Filament\Inventory\Resources\InventoryCategoryResource\Pages;
 class InventoryCategoryResource extends BaseCategoryAssetResource
 {
     protected static string $categoryType = 'inventory';
+
     protected static ?string $slug = 'kategori-inventaris';
-    protected static ?int $navigationSort = 3;
 
     public static function getNavigationIcon(): string|\Illuminate\Contracts\Support\Htmlable|null
     {

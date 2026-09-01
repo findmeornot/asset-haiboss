@@ -17,47 +17,25 @@ class DepreciationService
      */
     public static function calculate(Asset $asset): array
     {
-        // Path changed from asset->purchase->total_price to asset->purchaseItem->unit_price
-        $cost = '0';
-        $purchaseDate = null;
-        $isCapitalized = false;
-        if ($asset->purchaseItem) {
-            $cost = $asset->purchaseItem->unit_price;
-            $purchaseDate = $asset->purchaseItem->purchase ? $asset->purchaseItem->purchase->purchase_date : null;
-            // Trust the PurchaseItem's flag
-            $isCapitalized = (bool) $asset->purchaseItem->is_capitalized;
-        } elseif ($asset->purchase) {
-            // Legacy Fallback (AssetPurchase)
-            $totalPrice = $asset->purchase->total_price;
-            $quantity = max(1, $asset->purchase->quantity ?? 1);
-            $cost = $totalPrice !== null ? $totalPrice / $quantity : null;
-            
-            $purchaseDate = $asset->purchase->purchase_date;
-            // Legacy data doesn't have is_capitalized flag, evaluate it centrally to prevent invalid depreciation
-            $isCapitalized = \App\Models\PurchaseItem::isCapitalizable($cost !== null ? (float) $cost : null, $asset->classification);
-        }
-
-        $usefulLife = $asset->useful_life ?? ($asset->category ? (int) $asset->category->useful_life : 0);
+        $cost = $asset->purchase ? (string) ($asset->purchase->total_price ?? '0') : '0';
+        $purchaseDate = $asset->purchase ? $asset->purchase->purchase_date : null;
+        $usefulLife = $asset->category ? (int) $asset->category->useful_life : 0;
         
         // Business Rules Configurations
         $residualValue = '0'; // Configurable if needed
         $startYearOffset = 1; // "Penyusutan dimulai pada tahun berikutnya"
 
-        $costFloat = (float) $cost;
-        $residualValueFloat = (float) $residualValue;
-
-        // Return non-depreciable if not capitalized or invalid data
-        if (!$isCapitalized || $costFloat <= 0 || !$purchaseDate || $usefulLife <= 0) {
-            $reason = !$isCapitalized ? 'Barang tidak memenuhi syarat kapitalisasi (bukan aset tetap)' : 'Data pembelian/masa manfaat tidak valid atau 0';
+        // Handle empty or zero
+        if (bccomp($cost, '0', 2) <= 0 || !$purchaseDate || $usefulLife <= 0) {
             return [
-                'acquisition_cost' => number_format($costFloat, 2, '.', ''),
-                'book_value' => number_format($costFloat, 2, '.', ''),
-                'accumulated_depreciation' => '0.00',
-                'annual_depreciation' => '0.00',
+                'acquisition_cost' => $cost,
+                'book_value' => $cost,
+                'accumulated_depreciation' => '0',
+                'annual_depreciation' => '0',
                 'useful_life' => $usefulLife,
                 'remaining_useful_life' => $usefulLife,
                 'is_depreciable' => false,
-                'reason' => $reason,
+                'reason' => 'Data pembelian/masa manfaat tidak valid atau 0',
             ];
         }
 
@@ -65,10 +43,10 @@ class DepreciationService
         $currentYear = now()->year;
 
         // Calculate Depreciable Amount
-        $depreciableAmount = $costFloat - $residualValueFloat;
+        $depreciableAmount = bcsub($cost, $residualValue, 2);
         
         // Annual Depreciation = Depreciable Amount / Useful Life
-        $annualDepreciation = $depreciableAmount / $usefulLife;
+        $annualDepreciation = bcdiv($depreciableAmount, (string) $usefulLife, 2);
         
         // Calculate elapsed years for depreciation
         $startYear = $purchaseYear + $startYearOffset;
@@ -84,27 +62,27 @@ class DepreciationService
         }
 
         // Accumulated Depreciation = elapsed * annual
-        $accumulatedDepreciation = $annualDepreciation * $elapsedYears;
+        $accumulatedDepreciation = bcmul($annualDepreciation, (string) $elapsedYears, 2);
 
         // Ensure accumulated depreciation does not exceed depreciable amount due to rounding
-        if ($accumulatedDepreciation > $depreciableAmount) {
+        if (bccomp($accumulatedDepreciation, $depreciableAmount, 2) > 0) {
             $accumulatedDepreciation = $depreciableAmount;
         }
 
-        $bookValue = $costFloat - $accumulatedDepreciation;
+        $bookValue = bcsub($cost, $accumulatedDepreciation, 2);
         
         // Ensure book value doesn't drop below residual value
-        if ($bookValue < $residualValueFloat) {
-            $bookValue = $residualValueFloat;
+        if (bccomp($bookValue, $residualValue, 2) < 0) {
+            $bookValue = $residualValue;
         }
 
         $remainingUsefulLife = max(0, $usefulLife - $elapsedYears);
 
         return [
-            'acquisition_cost' => number_format($costFloat, 2, '.', ''),
-            'book_value' => number_format($bookValue, 2, '.', ''),
-            'accumulated_depreciation' => number_format($accumulatedDepreciation, 2, '.', ''),
-            'annual_depreciation' => number_format($annualDepreciation, 2, '.', ''),
+            'acquisition_cost' => $cost,
+            'book_value' => $bookValue,
+            'accumulated_depreciation' => $accumulatedDepreciation,
+            'annual_depreciation' => $annualDepreciation,
             'useful_life' => $usefulLife,
             'remaining_useful_life' => $remainingUsefulLife,
             'is_depreciable' => true,

@@ -17,31 +17,10 @@ class AssetPhoto extends Model
     
     protected static function booted()
     {
-        static::created(function (AssetPhoto $photo) {
-            \App\Services\AuditLogger::log(
-                action: \App\Enums\AuditAction::PHOTO_UPLOADED,
-                model: $photo->asset,
-                metadata: [
-                    'photo_id' => $photo->id,
-                    'file_path' => $photo->file_path,
-                ]
-            );
-        });
-
-        static::deleted(function (AssetPhoto $photo) {
-            // Delete actual file
+        static::deleting(function (AssetPhoto $photo) {
             if ($photo->file_path && Storage::disk('public')->exists($photo->file_path)) {
                 Storage::disk('public')->delete($photo->file_path);
             }
-
-            \App\Services\AuditLogger::log(
-                action: \App\Enums\AuditAction::PHOTO_DELETED,
-                model: $photo->asset,
-                metadata: [
-                    'photo_id' => $photo->id,
-                    'file_path' => $photo->file_path,
-                ]
-            );
         });
     }
 }

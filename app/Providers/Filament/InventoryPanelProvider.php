@@ -43,13 +43,6 @@ class InventoryPanelProvider extends PanelProvider
             ])
             ->databaseNotifications()
             ->sidebarWidth('15rem')
-            ->sidebarCollapsibleOnDesktop()
-            ->navigationGroups([
-                'Asset Management',
-                'PENGELOLAAN BARANG',
-                'Transaksi',
-                'Reports',
-            ])
             ->maxContentWidth(Width::Full)
             ->renderHook(
                 \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_AFTER,

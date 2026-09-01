@@ -9,7 +9,6 @@ use App\Filament\Inventory\Resources\SupplyCategoryResource\Pages;
  */
 class SupplyCategoryResource extends BaseCategoryAssetResource
 {
-    protected static bool $shouldRegisterNavigation = false;
     protected static string $categoryType = 'supply';
 
     protected static ?string $slug = 'kategori-persediaan';

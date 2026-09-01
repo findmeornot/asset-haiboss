@@ -3,10 +3,7 @@
 namespace App\Services;
 
 use App\Models\Asset;
-use App\Services\SupplyBarcodeGenerator;
-use App\Models\InventoryBalance;
-use App\Models\Purchase;
-use App\Models\PurchaseItem;
+use App\Models\AssetPurchase;
 use App\Models\Campus;
 use App\Models\Category;
 use App\Models\Classification;
@@ -37,7 +34,6 @@ class AssetImportService
         'Gedung',
         'Ruangan',
         'PIC',
-        'Status',
         'Kondisi',
         'Harga Perolehan',
         'Keterangan',
@@ -58,42 +54,33 @@ class AssetImportService
     ];
 
     /**
-     * Mapping dari display value Status → internal value (status).
+     * Mapping dari display value Kondisi → internal value (status).
      */
     public const STATUS_MAP = [
-        'stok (gudang)'             => 'stock',
+        'stok tersedia'             => 'stock',
         'stok'                      => 'stock',
         'stock'                     => 'stock',
         'aktif / digunakan'         => 'active',
         'aktif'                     => 'active',
         'active'                    => 'active',
+        'baik'                      => 'active',
         'dipinjam'                  => 'borrowed',
         'borrowed'                  => 'borrowed',
         'dalam perbaikan'           => 'maintenance',
         'perbaikan'                 => 'maintenance',
         'maintenance'               => 'maintenance',
-        'hilang'                    => 'lost',
-        'lost'                      => 'lost',
-        'terjual'                   => 'sold',
-        'sold'                      => 'sold',
-        'dihapuskan / musnah'       => 'disposed',
-        'disposed'                  => 'disposed',
-        'penghapusan administratif' => 'administratively_deleted',
-        'administratively_deleted'  => 'administratively_deleted',
-        'dimusnahkan'               => 'destroyed',
-        'destroyed'                 => 'destroyed',
-    ];
-
-    /**
-     * Mapping dari display value Kondisi → internal value (kondisi).
-     */
-    public const KONDISI_MAP = [
-        'baik'                      => 'good',
-        'good'                      => 'good',
         'rusak ringan'              => 'minor_damage',
         'minor_damage'              => 'minor_damage',
         'rusak berat'               => 'major_damage',
         'major_damage'              => 'major_damage',
+        'hilang'                    => 'lost',
+        'lost'                      => 'lost',
+        'terjual'                   => 'sold',
+        'sold'                      => 'sold',
+        'penghapusan administratif' => 'administratively_deleted',
+        'administratively_deleted'  => 'administratively_deleted',
+        'dimusnahkan'               => 'destroyed',
+        'destroyed'                 => 'destroyed',
     ];
 
     /**
@@ -107,6 +94,7 @@ class AssetImportService
         'Ruang'                 => 'Ruangan',
         'Gedung (Kampus)'       => 'Gedung',
         'Kepemilikan'           => 'Sumber Dana',
+        'Status'                => 'Kondisi',
         'Status Barang'         => 'Kondisi',
         'Nomor Inventaris'      => 'Kode',
         'Inventory Number'      => 'Kode',
@@ -372,27 +360,16 @@ class AssetImportService
             // Tidak divalidasi keberadaannya — jika belum ada di sistem akan dibuat otomatis saat import
 
             // ──────────────────────────────────────────
-            // 11. Status (status) — wajib
-            // ──────────────────────────────────────────
-            $statusRaw = trim($row['Status'] ?? '');
-            if (empty($statusRaw)) {
-                $rowErrors[] = ['field' => 'Status', 'message' => 'Status tidak boleh kosong.'];
-            } else {
-                if (!isset(self::STATUS_MAP[mb_strtolower($statusRaw)])) {
-                    $validStatus = implode(', ', array_unique(array_keys(self::STATUS_MAP)));
-                    $rowErrors[]  = ['field' => 'Status', 'message' => "Status \"{$statusRaw}\" tidak valid. Gunakan salah satu dari: {$validStatus}."];
-                }
-            }
-
-            // ──────────────────────────────────────────
-            // 11b. Kondisi (kondisi) — wajib
+            // 11. Kondisi (status) — wajib
             // ──────────────────────────────────────────
             $kondisiRaw = trim($row['Kondisi'] ?? '');
+            $statusVal  = null;
             if (empty($kondisiRaw)) {
                 $rowErrors[] = ['field' => 'Kondisi', 'message' => 'Kondisi tidak boleh kosong.'];
             } else {
-                if (!isset(self::KONDISI_MAP[mb_strtolower($kondisiRaw)])) {
-                    $validKondisi = implode(', ', array_unique(array_keys(self::KONDISI_MAP)));
+                $statusVal = self::STATUS_MAP[mb_strtolower($kondisiRaw)] ?? null;
+                if (!$statusVal) {
+                    $validKondisi = 'Stok Tersedia, Aktif / Digunakan, Dipinjam, Dalam Perbaikan, Rusak Ringan, Rusak Berat, Hilang, Terjual, Penghapusan Administratif, Dimusnahkan';
                     $rowErrors[]  = ['field' => 'Kondisi', 'message' => "Kondisi \"{$kondisiRaw}\" tidak valid. Gunakan salah satu dari: {$validKondisi}."];
                 }
             }
@@ -415,13 +392,6 @@ class AssetImportService
                     $rowErrors[] = ['field' => 'Harga Perolehan', 'message' => "Harga Perolehan harus berupa angka. Nilai \"{$hargaRaw}\" tidak valid."];
                 } else {
                     $hargaVal = (float) $hargaNorm;
-                    if ($classification) {
-                        if (strtolower($classification->slug) === 'aset' && $hargaVal < 1000000) {
-                            $rowErrors[] = ['field' => 'Harga Perolehan', 'message' => 'Aset harus memiliki harga perolehan >= Rp1.000.000.'];
-                        } elseif (strtolower($classification->slug) === 'inventaris' && $hargaVal >= 1000000) {
-                            $rowErrors[] = ['field' => 'Harga Perolehan', 'message' => 'Inventaris harus memiliki harga perolehan < Rp1.000.000.'];
-                        }
-                    }
                 }
             }
 
@@ -439,11 +409,7 @@ class AssetImportService
      * Import data ke database. Gunakan dalam DB::transaction.
      * Pastikan validateRows() sudah dipanggil dan tidak ada error sebelum memanggil ini.
      *
-     * Setiap baris CSV dengan Jumlah=N akan menghasilkan:
-     *   - Kategori 'supply' : 1 InventoryBalance saldo += N (tidak membuat Asset)
-     *   - Kategori lainnya  : 1 Purchase + 1 PurchaseItem + N Asset records individual
-     *
-     * @return int Jumlah unit berhasil diimport (jumlah Asset yang dibuat + jumlah supply unit)
+     * @return int Jumlah baris berhasil diimport
      */
     public function import(array $rows): int
     {
@@ -481,7 +447,7 @@ class AssetImportService
                 $category->classifications()->syncWithoutDetaching([$classification->id]);
             }
 
-            $ruanganName = trim($row['Ruangan'] ?? '');
+            $ruanganName    = trim($row['Ruangan'] ?? '');
 
             // Cari ruangan; jika belum ada dan gedung valid → buat otomatis
             $location = null;
@@ -495,11 +461,10 @@ class AssetImportService
                         'campus_id' => $campus->id,
                         'name'      => $ruanganName,
                     ]);
-                    // Tambahkan ke koleksi in-memory agar baris berikutnya bisa menemukannya
+                    // Tambahkan ke koleksi in-memory agar baris berikutnya di file ini bisa menemukannya
                     $locations->push($location->load('campus'));
                 }
             }
-
             // Cari PIC; jika belum ada → buat otomatis
             $picName = trim($row['PIC'] ?? '');
             $pic     = null;
@@ -513,8 +478,7 @@ class AssetImportService
             }
 
             $ownershipVal = self::OWNERSHIP_MAP[mb_strtolower(trim($row['Sumber Dana'] ?? ''))] ?? 'company';
-            $statusVal    = self::STATUS_MAP[mb_strtolower(trim($row['Status'] ?? ''))] ?? 'stock';
-            $kondisiVal   = self::KONDISI_MAP[mb_strtolower(trim($row['Kondisi'] ?? ''))] ?? 'good';
+            $statusVal    = self::STATUS_MAP[mb_strtolower(trim($row['Kondisi'] ?? ''))] ?? 'stock';
 
             // Tahun perolehan → purchase_date: null jika kosong/strip (tidak diketahui)
             $tahunRaw     = trim((string) ($row['Tahun Perolehan'] ?? ''));
@@ -535,23 +499,24 @@ class AssetImportService
                 }
             }
 
-            $jumlah     = max(1, (int) trim($row['Jumlah'] ?? 1));
-            $unitPrice  = $hargaVal ?? null;
-            $totalPrice = $unitPrice !== null ? $unitPrice * $jumlah : null;
+            $jumlah = max(1, (int) trim($row['Jumlah'] ?? 1));
 
-            // Notes (Keterangan) + unknown info suffix
-            $notesRaw    = trim($row['Keterangan'] ?? '');
+            // Kode selalu di-generate otomatis oleh sistem (tidak pakai dari file)
+            $kode = InventoryNumberGenerator::generate($classification, $category);
+
+            // Buat Asset
+            $notesRaw   = trim($row['Keterangan'] ?? '');
             $unknownInfo = array_filter([
-                $tahunUnknown ? 'tahun perolehan tidak diketahui' : null,
-                $hargaUnknown ? 'harga perolehan tidak diketahui' : null,
+                $tahunUnknown  ? 'tahun perolehan tidak diketahui'  : null,
+                $hargaUnknown  ? 'harga perolehan tidak diketahui'  : null,
             ]);
             if ($unknownInfo) {
                 $suffix   = '(' . implode(', ', $unknownInfo) . ')';
                 $notesRaw = $notesRaw !== '' ? $notesRaw . ' ' . $suffix : $suffix;
             }
 
-            // Shared base data for Asset records
-            $baseAssetData = [
+            $asset = Asset::create([
+                'inventory_number'  => $kode,
                 'classification_id' => $classification?->id,
                 'category_id'       => $category?->id,
                 'name'              => trim($row['Nama Barang'] ?? ''),
@@ -563,142 +528,26 @@ class AssetImportService
                 'location_id'       => $location?->id,
                 'pic_id'            => $pic?->id,
                 'status'            => $statusVal,
-                'kondisi'           => $kondisiVal,
                 'notes'             => $notesRaw ?: null,
-            ];
+            ]);
 
-            // ──────────────────────────────────────────────────────────────
-            // SUPPLY PATH: update InventoryBalance saldo — no Asset records
-            // ──────────────────────────────────────────────────────────────
-            if ($classification && strtolower($classification->slug) === 'persediaan-barang') {
-                // Create Purchase header for traceability
-                $purchase = Purchase::create([
+            // Buat AssetPurchase jika ada data harga atau tahun (bahkan jika tahun null)
+            if ($hargaVal !== null || $tahun !== null) {
+                $totalPrice = $hargaVal !== null ? ($hargaVal * $jumlah) : null;
+                AssetPurchase::create([
+                    'asset_id'      => $asset->id,
                     'purchase_date' => $purchaseDate,
-                    'ownership'     => $ownershipVal,
-                    'total_amount'  => $totalPrice,
+                    'quantity'      => $jumlah,
+                    'unit_price'    => $hargaVal,
+                    'total_price'   => $totalPrice,
                 ]);
-
-                // firstOrCreate balance grouped by category + name + location
-                $balanceName = trim($row['Nama Barang'] ?? '');
-                $balance = InventoryBalance::where([
-                    'category_id' => $category->id,
-                    'name'        => $balanceName,
-                    'brand'       => trim($row['Merk/Tipe'] ?? ''),
-                    'location_id' => $location?->id,
-                ])->first();
-
-                $isNewBalance = false;
-
-                if (!$balance) {
-                    $balance = InventoryBalance::create([
-                        'category_id' => $category->id,
-                        'name'        => $balanceName,
-                        'brand'       => trim($row['Merk/Tipe'] ?? ''),
-                        'location_id' => $location?->id,
-                        'campus_id' => $campus?->id,
-                        'quantity'  => 0,
-                        'master_barcode' => SupplyBarcodeGenerator::generateMaster(),
-                        'latest_sequence' => 0,
-                        'has_pure_master_unit' => false,
-                    ]);
-                    $isNewBalance = true;
-                }
-
-                // Add purchased quantity to the running balance
-                $balance->increment('quantity', $jumlah);
-
-                // Record purchase item linked to the balance
-                $purchaseItem = PurchaseItem::create([
-                    'purchase_id'        => $purchase->id,
-                    'inventory_balance_id' => $balance->id,
-                    'category_id'        => $category->id,
-                    'classification_id'  => $classification?->id,
-                    'name'               => $balanceName,
-                    'quantity'           => $jumlah,
-                    'unit'               => trim($row['Satuan'] ?? '') ?: null,
-                    'unit_price'         => $unitPrice,
-                    'total_price'        => $totalPrice,
-                    'is_capitalized'     => false, // Supply is never capitalized
-                ]);
-
-                // BARCODE LOGIC
-                if ($isNewBalance && $jumlah === 1) {
-                    $balance->update(['has_pure_master_unit' => true]);
-                    $balance->units()->create([
-                        'purchase_item_id' => $purchaseItem->id,
-                        'sub_barcode' => $balance->master_barcode,
-                        'status' => 'available'
-                    ]);
-                } else {
-                    $subBarcodes = SupplyBarcodeGenerator::generateSub($balance, $jumlah);
-                    $unitRecords = [];
-                    foreach ($subBarcodes as $sb) {
-                        $unitRecords[] = [
-                            'inventory_balance_id' => $balance->id,
-                            'purchase_item_id' => $purchaseItem->id,
-                            'sub_barcode' => $sb,
-                            'status' => 'available',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    }
-                    \App\Models\InventoryBalanceUnit::insert($unitRecords);
-                }
-
-                $count += $jumlah; // Count as stock units added
-                continue;
             }
 
-            // ──────────────────────────────────────────────────────────────
-            // ASSET / INVENTORY PATH: create N individual Asset records
-            // ──────────────────────────────────────────────────────────────
-
-            // Create Purchase header
-            $purchase = Purchase::create([
-                'purchase_date' => $purchaseDate,
-                'ownership'     => $ownershipVal,
-                'total_amount'  => $totalPrice,
-            ]);
-
-            // Create PurchaseItem (1 per row in CSV, regardless of quantity)
-            $purchaseItem = PurchaseItem::create([
-                'purchase_id'       => $purchase->id,
-                'category_id'       => $category?->id,
-                'classification_id' => $classification?->id,
-                'name'              => trim($row['Nama Barang'] ?? ''),
-                'quantity'          => $jumlah,
-                'unit'              => trim($row['Satuan'] ?? '') ?: null,
-                'unit_price'        => $unitPrice,
-                'total_price'       => $totalPrice,
-                // Business Rule: Capitalization based on UNIT PRICE >= Rp1.000.000 and classification ASET
-                'is_capitalized'    => PurchaseItem::isCapitalizable($unitPrice, $classification),
-            ]);
-
-            // Create N individual Asset records — 1 record = 1 physical unit
-            for ($i = 0; $i < $jumlah; $i++) {
-                // Each unit gets its own unique inventory_number (SKU)
-                // Kode selalu di-generate otomatis oleh sistem (tidak pakai dari file)
-                $inventoryNumber = InventoryNumberGenerator::generate($classification, $category);
-
-                $assetData = $baseAssetData;
-                $assetData['inventory_number'] = $inventoryNumber;
-                $assetData['purchase_item_id'] = $purchaseItem->id;
-                // Barcode is auto-generated by AssetObserver::creating()
-
-                // For quantities > 1, only the first unit gets the original serial_number.
-                // Subsequent units will have serial_number = null to avoid duplicate conflicts.
-                if ($i > 0) {
-                    $assetData['serial_number'] = null;
-                }
-
-                Asset::create($assetData);
-                $count++;
-            }
+            $count++;
         }
 
         return $count;
     }
-
 
     // ──────────────────────────────────────────────────────────────
     // Private helpers

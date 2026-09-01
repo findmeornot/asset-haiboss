@@ -83,17 +83,6 @@ class ApprovalRequestResource extends Resource
                                 ]);
                                 
                                 $payload = json_decode($lockedRecord->payload, true);
-
-                                $parentAudit = \App\Services\AuditLogger::log(
-                                    action: \App\Enums\AuditAction::MUTATION_APPROVED,
-                                    model: $lockedRecord,
-                                    old: ['status' => 'pending'],
-                                    new: ['status' => 'approved'],
-                                    metadata: ['payload' => $payload]
-                                );
-
-                                \App\Services\AuditLogger::$currentParentId = $parentAudit->id;
-
                                 if ($lockedRecord->request_type === 'status_change' && isset($payload['asset_id']) && isset($payload['new_status'])) {
                                     $asset = Asset::where('id', $payload['asset_id'])->lockForUpdate()->first();
                                     if ($asset) {
@@ -101,8 +90,6 @@ class ApprovalRequestResource extends Resource
                                         $asset->update(['status' => $payload['new_status']]);
                                     }
                                 }
-
-                                \App\Services\AuditLogger::$currentParentId = null;
                             });
                             \Filament\Notifications\Notification::make()->title('Pengajuan Disetujui')->success()->send();
                         } catch (\Exception $e) {
@@ -115,14 +102,9 @@ class ApprovalRequestResource extends Resource
                     ->color('danger')
                     ->visible(fn (ApprovalRequest $record) => $record->status === 'pending' && Auth::user()->hasPermissionTo('status.approve'))
                     ->requiresConfirmation()
-                    ->form([
-                        \Filament\Forms\Components\Textarea::make('reject_reason')
-                            ->label('Alasan Penolakan')
-                            ->required(),
-                    ])
-                    ->action(function (ApprovalRequest $record, array $data) {
+                    ->action(function (ApprovalRequest $record) {
                         try {
-                            \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data) {
+                            \Illuminate\Support\Facades\DB::transaction(function () use ($record) {
                                 $lockedRecord = ApprovalRequest::where('id', $record->id)->lockForUpdate()->first();
                                 if ($lockedRecord->status !== 'pending') {
                                     throw new \Exception('Pengajuan ini sudah diproses.');
@@ -131,17 +113,7 @@ class ApprovalRequestResource extends Resource
                                     'status' => 'rejected',
                                     'approved_by' => Auth::id(),
                                     'approved_at' => now(),
-                                    // Normally you'd store the rejection reason somewhere, perhaps in metadata if not in model
                                 ]);
-
-                                \App\Services\AuditLogger::log(
-                                    action: \App\Enums\AuditAction::MUTATION_REJECTED,
-                                    model: $lockedRecord,
-                                    old: ['status' => 'pending'],
-                                    new: ['status' => 'rejected'],
-                                    reason: $data['reject_reason'] ?? null,
-                                    metadata: ['payload' => json_decode($lockedRecord->payload, true)]
-                                );
                             });
                             \Filament\Notifications\Notification::make()->title('Pengajuan Ditolak')->success()->send();
                         } catch (\Exception $e) {

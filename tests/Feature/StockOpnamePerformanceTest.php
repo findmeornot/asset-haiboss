@@ -7,23 +7,21 @@ use App\Models\Campus;
 use App\Models\StockOpname;
 use App\Models\StockOpnameItem;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class StockOpnamePerformanceTest extends TestCase
 {
-    use DatabaseTruncation;
+    use RefreshDatabase;
 
     public function test_bulk_creation_reduces_queries()
     {
         $campus = Campus::factory()->create();
-        $location = \App\Models\Location::factory()->create(['campus_id' => $campus->id]);
         
         // Generate 1000 assets for the campus
         Asset::factory()->count(1000)->create([
             'campus_id' => $campus->id,
-            'location_id' => $location->id,
             'status' => 'stock'
         ]);
 
@@ -75,8 +73,7 @@ class StockOpnamePerformanceTest extends TestCase
     public function test_unique_constraint_prevents_duplicate_items()
     {
         $campus = Campus::factory()->create();
-        $location = \App\Models\Location::factory()->create(['campus_id' => $campus->id]);
-        $asset = Asset::factory()->create(['campus_id' => $campus->id, 'location_id' => $location->id]);
+        $asset = Asset::factory()->create(['campus_id' => $campus->id]);
         $opname = StockOpname::factory()->create(['campus_id' => $campus->id]);
 
         StockOpnameItem::create([

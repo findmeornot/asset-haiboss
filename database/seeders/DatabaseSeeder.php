@@ -25,17 +25,17 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $inventory = User::firstOrCreate(
-            ['email' => 'inventory@example.com'],
+        $adminExample = User::firstOrCreate(
+            ['email' => 'admin@example.com'],
             [
-                'name' => 'Inventory Manager',
+                'name' => 'Admin Example',
                 'password' => bcrypt('password'),
             ]
         );
 
         $this->call(RolePermissionSeeder::class);
-        $this->call(ClassificationSeeder::class);
-        $this->call(CategorySeeder::class);
+        // $this->call(ClassificationSeeder::class);
+        // $this->call(CategorySeeder::class);
         // $this->call(DummyDataSeeder::class);
     }
 }

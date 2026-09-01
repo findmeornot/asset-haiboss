@@ -29,7 +29,7 @@ class StockOpnameScanner extends Page
     public $totalAssets = 0;
     public $checkedAssets = 0;
     
-    public $condition = 'good';
+    public $condition = 'active';
     public $actual_campus_id = null;
     public $actual_location_id = null;
     public $notes = '';
@@ -101,7 +101,7 @@ class StockOpnameScanner extends Page
                 $this->scannedAsset = $asset;
                 $this->actual_campus_id = $asset->campus_id;
                 $this->actual_location_id = $asset->location_id;
-                $this->condition = $asset->kondisi;
+                $this->condition = $asset->status;
                 $this->is_found = true;
                 $this->notes = '';
             }
@@ -169,7 +169,7 @@ class StockOpnameScanner extends Page
         $this->savedItem = null;
         $this->alreadyVerifiedItem = null;
         $this->is_found = true;
-        $this->condition = 'good';
+        $this->condition = 'active';
         $this->actual_campus_id = null;
         $this->actual_location_id = null;
         $this->notes = '';

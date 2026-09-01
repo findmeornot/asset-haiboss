@@ -13,39 +13,14 @@ class CreateAsset extends CreateRecord
 
     protected ?array $purchaseData = null;
 
-    /**
-     * Flag to detect when the creation is for Supply (InventoryBalance path).
-     * This prevents afterCreate() from running logic that requires a persisted Asset record.
-     */
-    protected bool $isSupplyCreation = false;
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\Action::make('back')
-                ->label('Kembali')
-                ->icon('heroicon-o-arrow-left')
-                ->color('gray')
-                ->url(fn () => static::getResource()::getUrl('index')),
-        ];
-    }
-
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        // Generate inventory number automatically
+        $data['inventory_number'] = InventoryNumberGenerator::generate();
+
         // Extract purchase data
         if (isset($data['purchase_data'])) {
             $this->purchaseData = $data['purchase_data'];
-
-            if (array_key_exists('ownership', $this->purchaseData)) {
-                $data['ownership'] = $this->purchaseData['ownership'];
-                // We keep it in purchaseData for the Purchase model
-            }
-            if (array_key_exists('unit', $this->purchaseData)) {
-                $data['unit'] = $this->purchaseData['unit'];
-                // We keep it in purchaseData for the PurchaseItem model
-            }
-            // Quantity is deliberately kept in purchaseData to be used in handleRecordCreation
-
             unset($data['purchase_data']);
         }
 
@@ -73,146 +48,11 @@ class CreateAsset extends CreateRecord
         return $data;
     }
 
-    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
-    {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
-            $quantity = isset($this->purchaseData['quantity']) ? (int) $this->purchaseData['quantity'] : 1;
-            if ($quantity < 1) $quantity = 1;
-
-            $unitPrice  = isset($this->purchaseData['unit_price'])  ? (float) $this->purchaseData['unit_price']  : 0;
-            $totalPrice = isset($this->purchaseData['total_price'])  ? (float) $this->purchaseData['total_price'] : ($unitPrice * $quantity);
-            $purchaseDate = $this->purchaseData['purchase_date'] ?? null;
-            $ownership    = $this->purchaseData['ownership']     ?? 'company';
-            $unit         = $this->purchaseData['unit']          ?? null;
-
-            // 1. Create Purchase header
-            $purchase = \App\Models\Purchase::create([
-                'purchase_date' => $purchaseDate,
-                'ownership'     => $ownership,
-                'total_amount'  => $totalPrice,
-            ]);
-
-            // Pre-fetch classification and category objects for inventory number generation
-            $classification = \App\Models\Classification::find($data['classification_id'] ?? null);
-            $category       = \App\Models\Category::find($data['category_id']       ?? null);
-
-            $purchaseItemData = [
-                'purchase_id'       => $purchase->id,
-                'category_id'       => $data['category_id']       ?? null,
-                'classification_id' => $data['classification_id'] ?? null,
-                'name'              => $data['name']               ?? 'Asset Baru',
-                'quantity'          => $quantity,
-                'unit'              => $unit,
-                'unit_price'        => $unitPrice,
-                'total_price'       => $totalPrice,
-                // Business Rule: Capitalization is based on UNIT PRICE, not total price
-                'is_capitalized'    => \App\Models\PurchaseItem::isCapitalizable($unitPrice, $classification),
-            ];
-
-            if ($classification && strtolower($classification->slug) === 'persediaan-barang') {
-                // 2a. Supply path: update InventoryBalance — NO individual Asset records created.
-                $this->isSupplyCreation = true;
-
-                $balance = \App\Models\InventoryBalance::where(
-                    [
-                        'category_id' => $data['category_id'],
-                        'name'        => $data['name'] ?? 'Asset Baru',
-                        'brand'       => $data['brand'] ?? null,
-                        'location_id' => $data['location_id'] ?? null,
-                    ]
-                )->first();
-                
-                $isNewBalance = false;
-                
-                if (!$balance) {
-                    $balance = \App\Models\InventoryBalance::create(
-                        [
-                            'category_id' => $data['category_id'],
-                            'name'        => $data['name'] ?? 'Asset Baru',
-                            'brand'       => $data['brand'] ?? null,
-                            'location_id' => $data['location_id'] ?? null,
-                            'campus_id' => $data['campus_id'] ?? null,
-                            'quantity'  => 0,
-                            'master_barcode' => \App\Services\SupplyBarcodeGenerator::generateMaster(),
-                            'latest_sequence' => 0,
-                            'has_pure_master_unit' => false,
-                        ]
-                    );
-                    $isNewBalance = true;
-                }
-
-                // Add purchased quantity to the running balance
-                $balance->increment('quantity', $quantity);
-
-                // Link PurchaseItem to the balance for purchase history traceability
-                $purchaseItemData['inventory_balance_id'] = $balance->id;
-                $purchaseItemData['is_capitalized'] = false; // Always false for supply
-                $purchaseItem = \App\Models\PurchaseItem::create($purchaseItemData);
-
-                // BARCODE LOGIC
-                if ($isNewBalance && $quantity === 1) {
-                    $balance->update(['has_pure_master_unit' => true]);
-                    $balance->units()->create([
-                        'purchase_item_id' => $purchaseItem->id,
-                        'sub_barcode' => $balance->master_barcode,
-                        'status' => 'available'
-                    ]);
-                } else {
-                    $subBarcodes = \App\Services\SupplyBarcodeGenerator::generateSub($balance, $quantity);
-                    $unitRecords = [];
-                    foreach ($subBarcodes as $sb) {
-                        $unitRecords[] = [
-                            'inventory_balance_id' => $balance->id,
-                            'purchase_item_id' => $purchaseItem->id,
-                            'sub_barcode' => $sb,
-                            'status' => 'available',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    }
-                    \App\Models\InventoryBalanceUnit::insert($unitRecords);
-                }
-
-                // Return an unsaved Asset instance to satisfy Filament's Model return type contract.
-                // afterCreate() detects isSupplyCreation=true and skips any asset-level logic.
-                // getRedirectUrl() already returns the index page, so no record key is required.
-                return new \App\Models\Asset();
-            }
-
-            // 2b. Asset / Inventory path: create PurchaseItem, then N individual Asset records
-            $purchaseItem = \App\Models\PurchaseItem::create($purchaseItemData);
-
-            $firstAsset = null;
-
-            // 3. Create N individual Asset records (1 record = 1 physical unit)
-            for ($i = 0; $i < $quantity; $i++) {
-                // Each unit gets its own unique inventory_number (SKU)
-                $inventoryNumber = \App\Services\InventoryNumberGenerator::generate($classification, $category);
-
-                $assetData                     = $data;
-                $assetData['inventory_number'] = $inventoryNumber;
-                $assetData['purchase_item_id'] = $purchaseItem->id;
-                // Barcode is generated automatically by AssetObserver::creating()
-
-                $asset = static::getModel()::create($assetData);
-
-                if ($i === 0) {
-                    $firstAsset = $asset;
-                }
-            }
-
-            return $firstAsset;
-        });
-    }
-
     protected function afterCreate(): void
     {
-        // Supply creation does not produce a persisted Asset record.
-        // Skip any post-create logic that requires an Asset with a valid database ID.
-        if ($this->isSupplyCreation) {
-            return;
+        if ($this->purchaseData) {
+            $this->record->purchase()->create($this->purchaseData);
         }
-        // Legacy AssetPurchase creation is removed (Milestone 9).
     }
 
     protected function getRedirectUrl(): string

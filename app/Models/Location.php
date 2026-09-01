@@ -5,11 +5,10 @@ use App\Models\Traits\HasRouteUlid;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 class Location extends Model {
-    use HasRouteUlid, SoftDeletes, HasFactory;
+    use HasRouteUlid;
 
+    use SoftDeletes;
     protected $guarded = [];
     public function campus(): BelongsTo { return $this->belongsTo(Campus::class); }
     public function assets(): HasMany { return $this->hasMany(Asset::class); }

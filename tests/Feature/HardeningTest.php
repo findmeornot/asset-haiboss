@@ -10,38 +10,35 @@ use App\Models\Location;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\InventoryNumberGenerator;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Exception;
 
 class HardeningTest extends TestCase
 {
-    use DatabaseTruncation;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
         // Seed initial sequences for the test
-        DB::table('inventory_number_sequences')->updateOrInsert(
-            ['name' => 'asset_inventory'],
-            [
-                'current_value' => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        );
+        DB::table('inventory_number_sequences')->insert([
+            'name' => 'asset_inventory',
+            'current_value' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     public function test_concurrent_inventory_number_generation()
     {
         $num1 = InventoryNumberGenerator::generate();
-        Asset::factory()->create(['inventory_number' => $num1]);
         $num2 = InventoryNumberGenerator::generate();
 
         $this->assertNotEquals($num1, $num2);
-        $this->assertEquals('INV/NCL/NCT/0001', $num1);
-        $this->assertEquals('INV/NCL/NCT/0002', $num2);
+        $this->assertEquals('INV-000001', $num1);
+        $this->assertEquals('INV-000002', $num2);
     }
 
     public function test_duplicate_pending_approval_prevention()

@@ -6,12 +6,12 @@ use App\Models\Asset;
 use App\Models\AssetStatusHistory;
 use App\Models\User;
 use App\Models\Role;
-use Illuminate\Foundation\Testing\DatabaseTruncation;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AssetSoftDeleteTest extends TestCase
 {
-    use DatabaseTruncation;
+    use RefreshDatabase;
 
     public function test_asset_is_soft_deleted_not_force_deleted()
     {

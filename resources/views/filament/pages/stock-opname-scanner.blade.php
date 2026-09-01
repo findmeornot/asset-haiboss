@@ -387,7 +387,7 @@
                                 <div class="so-flex-row-gap" style="gap: 0.5rem; flex-wrap: wrap;">
                                     <!-- Radio Buttons for Condition -->
                                     <label style="display:flex; align-items:center; gap:0.25rem; font-size:0.875rem; cursor:pointer;">
-                                        <input type="radio" wire:model="condition" value="active"> Baik
+                                        <input type="radio" wire:model="condition" value="good"> Baik
                                     </label>
                                     <label style="display:flex; align-items:center; gap:0.25rem; font-size:0.875rem; cursor:pointer;">
                                         <input type="radio" wire:model="condition" value="minor_damage"> Rusak Ringan

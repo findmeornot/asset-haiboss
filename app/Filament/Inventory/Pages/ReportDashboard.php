@@ -59,7 +59,10 @@ class ReportDashboard extends Page implements HasForms
                         Components\Select::make('report_type')
                             ->label('Jenis Laporan')
                             ->options([
-                                'all_assets' => 'Daftar Seluruh Barang',
+                                'aset_only' => 'Daftar Aset',
+                                'inventaris_only' => 'Daftar Inventaris',
+                                'persediaan_only' => 'Daftar Persediaan / Stok',
+                                'all_assets' => 'Daftar Seluruh Barang (Gabungan)',
                                 'by_location' => 'Barang per Lokasi',
                                 'by_campus' => 'Barang per Gedung',
                                 'by_category' => 'Barang per Kategori',
@@ -72,7 +75,8 @@ class ReportDashboard extends Page implements HasForms
                                 'stock_opname' => 'Stock Opname',
                             ])
                             ->required()
-                            ->reactive(),
+                            ->reactive()
+                            ->native(false),
                             
                         \Filament\Schemas\Components\Fieldset::make('Filter Spesifik')
                             ->schema([
@@ -80,21 +84,25 @@ class ReportDashboard extends Page implements HasForms
                                     ->label('Gedung')
                                     ->options(\App\Models\Campus::pluck('name', 'id'))
                                     ->live()
-                                    ->afterStateUpdated(fn (callable $set) => $set('location_id', null)),
+                                    ->afterStateUpdated(fn (callable $set) => $set('location_id', null))
+                                    ->native(false),
                                 Components\Select::make('location_id')
                                     ->label('Ruangan')
                                     ->options(fn (callable $get) => \App\Models\Location::when($get('campus_id'), fn($q) => $q->where('campus_id', $get('campus_id')))->pluck('name', 'id'))
-                                    ->disabled(fn (callable $get) => blank($get('campus_id'))),
+                                    ->disabled(fn (callable $get) => blank($get('campus_id')))
+                                    ->native(false),
                                 Components\Select::make('category_id')
                                     ->label('Kategori')
-                                    ->options(\App\Models\Category::pluck('name', 'id')),
+                                    ->options(\App\Models\Category::pluck('name', 'id'))
+                                    ->native(false),
                                 Components\Select::make('ownership')
                                     ->label('Sumber Dana')
                                     ->options([
                                         'company' => 'Yayasan',
                                         'grant'   => 'Hibah',
                                         'loan'    => 'Pinjaman',
-                                    ]),
+                                    ])
+                                    ->native(false),
                                 Components\TextInput::make('year')
                                     ->label('Tahun Pembelian')
                                     ->numeric(),

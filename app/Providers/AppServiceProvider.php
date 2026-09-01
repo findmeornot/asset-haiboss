@@ -24,7 +24,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-         if (!app()->environment('local')) {
+        \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\AuthEventsSubscriber::class);
+        \App\Models\User::observe(\App\Observers\UserObserver::class);
+        
+        
+        if (!app()->environment('local')) {
             URL::forceScheme('https');
         }
 

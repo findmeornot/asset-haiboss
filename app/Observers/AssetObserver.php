@@ -11,6 +11,25 @@ use Illuminate\Support\Facades\Auth;
 
 class AssetObserver
 {
+    public function creating(Asset $asset): void
+    {
+        if (empty($asset->barcode)) {
+            $asset->barcode = \App\Services\BarcodeNumberGenerator::generate();
+        }
+    }
+
+    public function updating(Asset $asset): void
+    {
+        if ($asset->isDirty('classification_id') || $asset->isDirty('category_id')) {
+            $classification = \App\Models\Classification::find($asset->classification_id);
+            $category = \App\Models\Category::find($asset->category_id);
+            
+            if ($classification && $category) {
+                $asset->inventory_number = \App\Services\InventoryNumberGenerator::generate($classification, $category);
+            }
+        }
+    }
+
     public function created(Asset $asset): void
     {
         AuditLogger::log('created', $asset, null, $asset->toArray());
@@ -22,12 +41,14 @@ class AssetObserver
         $changes = $asset->getChanges();
         $original = array_intersect_key($asset->getOriginal(), $changes);
 
-        // Check for Status Change
-        if ($asset->wasChanged('status')) {
+        // Check for Status/Kondisi Change
+        if ($asset->wasChanged('status') || $asset->wasChanged('kondisi')) {
             AssetStatusHistory::create([
                 'asset_id' => $asset->id,
                 'old_status' => $asset->getOriginal('status'),
                 'new_status' => $asset->status,
+                'old_kondisi' => $asset->getOriginal('kondisi'),
+                'new_kondisi' => $asset->kondisi,
                 'changed_by' => $userId,
             ]);
             AuditLogger::log('status_change', $asset, $original, $changes, request()->input('status_change_reason'));
@@ -41,14 +62,8 @@ class AssetObserver
                 'changed_by' => $userId,
             ]);
             AuditLogger::log('location_change', $asset, $original, $changes);
-        } elseif ($asset->wasChanged('unit_price') || $asset->wasChanged('total_price')) {
-            AssetPriceHistory::create([
-                'asset_id' => $asset->id,
-                'old_price' => $asset->getOriginal('total_price') ?? $asset->getOriginal('unit_price'),
-                'new_price' => $asset->total_price ?? $asset->unit_price,
-                'changed_by' => $userId,
-            ]);
-            AuditLogger::log('price_change', $asset, $original, $changes);
+        } elseif ($asset->wasChanged('inventory_number')) {
+            AuditLogger::log('sku_change', $asset, $original, $changes);
         } else {
             // General Update
             AuditLogger::log('updated', $asset, $original, $changes);

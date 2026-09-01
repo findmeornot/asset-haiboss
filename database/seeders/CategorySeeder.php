@@ -11,60 +11,58 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
-        // Kategori + relasi klasifikasi berdasarkan struktur akuntansi
-        // ASET, INVENTARIS, PERSEDIAAN
         $categoryClassifications = [
-            // ─── ASET ───────────────────────────────────────────────
             'Elektronik'                          => ['Aset', 'Inventaris'],
             'Mesin'                               => ['Aset', 'Inventaris'],
-
-            // ─── INVENTARIS ─────────────────────────────────────────
-            'ATK'                                 => ['Persediaan Barang'],
-            'Dekorasi'                            => ['Inventaris', 'Persediaan Barang'],
-            'Elektronik Lainnya'                  => ['Inventaris', 'Persediaan Barang'],
+            
+            'ATK'                                 => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
+            'Dekorasi'                            => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
+            'Elektronik Lainnya'                  => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
             'Furniture'                           => ['Inventaris'],
             'Jaringan'                            => ['Inventaris'],
-            'Mainan'                              => ['Inventaris', 'Persediaan Barang'],
+            'Mainan'                              => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
             'Perlengkapan Mushola'                => ['Inventaris'],
-            'Perlengkapan Asrama'                 => ['Inventaris', 'Persediaan Barang'],
-            'Perlengkapan ATK'                    => ['Inventaris', 'Persediaan Barang'],
-            'Perlengkapan Dapur'                  => ['Inventaris', 'Persediaan Barang'],
-            'Perlengkapan Ikan'                   => ['Inventaris', 'Persediaan Barang'],
+            'Perlengkapan Asrama'                 => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
+            'Perlengkapan ATK'                    => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
+            'Perlengkapan Dapur'                  => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
+            'Perlengkapan Ikan'                   => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
             'Perlengkapan Jaringan'               => ['Inventaris'],
-            'Perlengkapan Kamar Mandi'            => ['Inventaris', 'Persediaan Barang'],
+            'Perlengkapan Kamar Mandi'            => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
             'Perlengkapan Keamanan/Keselamatan'   => ['Inventaris'],
-            'Perlengkapan Kebersihan'             => ['Inventaris', 'Persediaan Barang'],
+            'Perlengkapan Kebersihan'             => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
             'Perlengkapan Kendaraan'              => ['Inventaris'],
             'Perlengkapan Kesehatan'              => ['Inventaris'],
             'Perlengkapan Konten'                 => ['Inventaris'],
-            'Perlengkapan Lainnya'                => ['Inventaris', 'Persediaan Barang'],
+            'Perlengkapan Lainnya'                => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
             'Perlengkapan Listrik'                => ['Inventaris'],
-            'Perlengkapan Olahraga'               => ['Inventaris', 'Persediaan Barang'],
+            'Perlengkapan Olahraga'               => ['Inventaris', 'Persediaan', 'Persediaan Barang'],
             'Perlengkapan Tukang'                 => ['Inventaris'],
-
-            // ─── PERSEDIAAN ─────────────────────────────────────────
-            'Makanan'                             => ['Persediaan Barang'],
-            'Perlengkapan Aksesoris HP'           => ['Persediaan Barang'],
-            'Perlengkapan Billiard'               => ['Persediaan Barang'],
-            'Perlengkapan PMB'                    => ['Persediaan Barang'],
-            'Souvenir'                            => ['Persediaan Barang'],
+            
+            'Makanan'                             => ['Persediaan', 'Persediaan Barang'],
+            'Perlengkapan Aksesoris HP'           => ['Persediaan', 'Persediaan Barang'],
+            'Perlengkapan Billiard'               => ['Persediaan', 'Persediaan Barang'],
+            'Perlengkapan PMB'                    => ['Persediaan', 'Persediaan Barang'],
+            'Souvenir'                            => ['Persediaan', 'Persediaan Barang'],
         ];
 
+        // Mendapatkan semua classification yang ada (termasuk 'Persediaan Barang' atau 'Persediaan')
         $classifications = Classification::pluck('id', 'name');
 
         foreach ($categoryClassifications as $name => $classificationNames) {
             $category = Category::firstOrCreate(
-                ['name' => $name],
+                ['name' => strtoupper($name)],
                 [
                     'code'        => strtoupper(Str::slug($name, '-')),
                     'description' => 'Kategori otomatis untuk ' . $name,
                     'active'      => true,
+                    'type'        => 'asset', // Default, bisa disesuaikan nanti
                 ]
             );
 
             $ids = collect($classificationNames)
                 ->map(fn ($classificationName) => $classifications[$classificationName] ?? null)
                 ->filter()
+                ->unique()
                 ->all();
 
             $category->classifications()->syncWithoutDetaching($ids);

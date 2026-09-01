@@ -18,6 +18,10 @@ Route::get('/asset/{asset}/print-label', function (Asset $asset) {
     return view('asset-label-print', compact('asset'));
 })->name('asset.label.print')->middleware('auth');
 
+Route::get('/asset/bulk-print', [App\Http\Controllers\BulkPrintController::class, 'print'])
+    ->name('asset.bulk.print')
+    ->middleware('auth');
+
 Route::get('/movement/{movement}/berita-acara', function (AssetMovement $movement, BeritaAcaraService $baService) {
     abort_unless(Auth::check(), 403);
     abort_unless($movement->status === 'completed', 404, 'Mutasi belum selesai.');

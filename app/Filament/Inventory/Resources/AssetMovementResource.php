@@ -145,13 +145,19 @@ class AssetMovementResource extends Resource
                     ->color('danger')
                     ->visible(fn (AssetMovement $record) => $record->status === 'pending' && Auth::user()->hasPermissionTo('movements.approve'))
                     ->requiresConfirmation()
-                    ->action(function (AssetMovement $record) {
+                    ->form([
+                        \Filament\Forms\Components\Textarea::make('reject_reason')
+                            ->label('Alasan Penolakan')
+                            ->required(),
+                    ])
+                    ->action(function (AssetMovement $record, array $data) {
                         try {
-                            \Illuminate\Support\Facades\DB::transaction(function () use ($record) {
+                            \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data) {
                                 $lockedRecord = AssetMovement::where('id', $record->id)->lockForUpdate()->first();
                                 if ($lockedRecord->status !== 'pending') {
                                     throw new \Exception('Mutasi ini sudah diproses.');
                                 }
+                                request()->merge(['reject_reason' => $data['reject_reason']]);
                                 $lockedRecord->update([
                                     'status' => 'rejected',
                                     'approved_by' => Auth::id(),
@@ -175,7 +181,22 @@ class AssetMovementResource extends Resource
                                 if ($lockedRecord->status !== 'approved') {
                                     throw new \Exception('Hanya mutasi yang disetujui yang dapat diselesaikan.');
                                 }
-                                
+
+                                $lockedRecord->update([
+                                    'status' => 'completed',
+                                    'movement_date' => now(),
+                                ]);
+
+                                $parentLog = \App\Models\AuditLog::where('auditable_type', get_class($lockedRecord))
+                                    ->where('auditable_id', $lockedRecord->id)
+                                    ->where('action', 'mutation_completed')
+                                    ->latest('id')
+                                    ->first();
+
+                                if ($parentLog) {
+                                    \App\Services\AuditLogger::$currentParentId = $parentLog->id;
+                                }
+
                                 $asset = Asset::where('id', $lockedRecord->asset_id)->lockForUpdate()->first();
                                 if ($asset) {
                                     $asset->update([
@@ -185,10 +206,7 @@ class AssetMovementResource extends Resource
                                     ]);
                                 }
 
-                                $lockedRecord->update([
-                                    'status' => 'completed',
-                                    'movement_date' => now(),
-                                ]);
+                                \App\Services\AuditLogger::$currentParentId = null;
                             });
                             \Filament\Notifications\Notification::make()->title('Mutasi Selesai')->success()->send();
                         } catch (\Exception $e) {

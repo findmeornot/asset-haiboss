@@ -7,8 +7,8 @@
     <div class="inline-block p-4 bg-white border border-gray-300 rounded shadow-sm">
         <div class="font-bold text-black mb-2">{{ $record->name }}</div>
         <div class="mx-auto flex justify-center py-2">
-            {!! app(\App\Services\BarcodeService::class)->generateSvg($record->inventory_number) !!}
+            {!! app(\App\Services\BarcodeService::class)->generateSvg($record->barcode) !!}
         </div>
-        <div class="mt-2 text-sm text-black font-mono">{{ $record->inventory_number }}</div>
+        <div class="mt-2 text-sm text-black font-mono">{{ $record->barcode }}</div>
     </div>
 </div>

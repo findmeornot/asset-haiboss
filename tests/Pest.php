@@ -14,9 +14,10 @@ use Tests\TestCase;
 |
 */
 
-pest()->extend(TestCase::class)
- // ->use(RefreshDatabase::class)
-    ->in('Feature');
+uses(
+    Tests\TestCase::class,
+    // Illuminate\Foundation\Testing\DatabaseTruncation::class,
+)->in('Feature');
 
 /*
 |--------------------------------------------------------------------------

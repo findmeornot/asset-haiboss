@@ -78,6 +78,41 @@ class UnifiedItemResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'stock'                    => 'Stok (Gudang)',
+                        'active'                   => 'Aktif / Digunakan',
+                        'borrowed'                 => 'Dipinjam',
+                        'maintenance'              => 'Dalam Perbaikan',
+                        'lost'                     => 'Hilang',
+                        'sold'                     => 'Terjual',
+                        'disposed'                 => 'Dihapuskan / Musnah',
+                        'administratively_deleted' => 'Penghapusan Administratif',
+                        'destroyed'                => 'Dimusnahkan',
+                        default                    => $state ?? '-',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'stock', 'active'         => 'success',
+                        'borrowed', 'maintenance' => 'warning',
+                        'lost', 'destroyed'       => 'danger',
+                        'sold', 'disposed', 'administratively_deleted' => 'gray',
+                        default                   => 'gray',
+                    })
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('kondisi')
+                    ->label('Kondisi')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'good'         => 'Baik',
+                        'minor_damage' => 'Rusak Ringan',
+                        'major_damage' => 'Rusak Berat',
+                        default        => $state ?? '-',
+                    })
+                    ->color(fn (?string $state): string => match ($state) {
+                        'good'         => 'success',
+                        'minor_damage' => 'warning',
+                        'major_damage' => 'danger',
+                        default        => 'gray',
+                    })
                     ->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
@@ -90,17 +125,23 @@ class UnifiedItemResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Status')
                     ->options([
-                        'stock'                    => 'Stok Tersedia',
+                        'stock'                    => 'Stok (Gudang)',
                         'available'                => 'Tersedia',
                         'active'                   => 'Aktif / Digunakan',
                         'borrowed'                 => 'Dipinjam',
                         'maintenance'              => 'Dalam Perbaikan',
-                        'minor_damage'             => 'Rusak Ringan',
-                        'major_damage'             => 'Rusak Berat',
                         'lost'                     => 'Hilang',
                         'sold'                     => 'Terjual',
+                        'disposed'                 => 'Dihapuskan / Musnah',
                         'administratively_deleted' => 'Penghapusan Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                    ]),
+                Tables\Filters\SelectFilter::make('kondisi')
+                    ->label('Kondisi')
+                    ->options([
+                        'good'                     => 'Baik',
+                        'minor_damage'             => 'Rusak Ringan',
+                        'major_damage'             => 'Rusak Berat',
                     ]),
                 Tables\Filters\Filter::make('campus_location')
                     ->form([

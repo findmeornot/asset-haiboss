@@ -27,7 +27,7 @@ class ViewStockOpname extends ViewRecord
                             ->state(fn ($record) => StockOpnameItem::where('stock_opname_id', $record->id)->where('is_found', false)->count()),
                         Components\TextEntry::make('good_condition')
                             ->label('Kondisi Baik')
-                            ->state(fn ($record) => StockOpnameItem::where('stock_opname_id', $record->id)->where('condition', 'active')->count()),
+                            ->state(fn ($record) => StockOpnameItem::where('stock_opname_id', $record->id)->where('condition', 'good')->count()),
                         Components\TextEntry::make('minor_damage')
                             ->label('Rusak Ringan')
                             ->state(fn ($record) => StockOpnameItem::where('stock_opname_id', $record->id)->where('condition', 'minor_damage')->count()),

@@ -39,7 +39,7 @@ class ReportController extends Controller
             
             // Apply specific filters based on report type
             if ($type === 'damaged') {
-                $query->whereIn('status', ['minor_damage', 'major_damage']);
+                $query->whereIn('kondisi', ['minor_damage', 'major_damage']);
             } elseif ($type === 'lost') {
                 $query->where('status', 'lost');
             } elseif ($type === 'borrowed') {

@@ -240,20 +240,29 @@ class AssetResource extends Resource
                             ->hidden(fn (callable $get) => ((int) ($get('purchase_data.quantity') ?: 1)) > 1),
 
                         Components\Select::make('status')
-                            ->label('Kondisi & Status')
+                            ->label('Status')
                             ->options([
-                                'stock'        => 'Stok Tersedia (Baik)',
+                                'stock'        => 'Stok (Gudang)',
                                 'active'       => 'Aktif / Digunakan',
                                 'borrowed'     => 'Dipinjam',
                                 'maintenance'  => 'Dalam Perbaikan',
-                                'minor_damage' => 'Rusak Ringan',
-                                'major_damage' => 'Rusak Berat',
                                 'lost'         => 'Hilang',
                                 'sold'         => 'Terjual',
                                 'disposed'     => 'Dihapuskan / Musnah',
                             ])
                             ->required()
                             ->default('stock')
+                            ->native(false),
+
+                        Components\Select::make('kondisi')
+                            ->label('Kondisi')
+                            ->options([
+                                'good'         => 'Baik',
+                                'minor_damage' => 'Rusak Ringan',
+                                'major_damage' => 'Rusak Berat',
+                            ])
+                            ->required()
+                            ->default('good')
                             ->native(false),
                             
                         Components\Textarea::make('notes')
@@ -405,21 +414,36 @@ class AssetResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->sortable()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'stock'                    => 'Stok (Gudang)',
+                        'active'                   => 'Aktif / Digunakan',
+                        'borrowed'                 => 'Dipinjam',
+                        'maintenance'              => 'Dalam Perbaikan',
+                        'lost'                     => 'Hilang',
+                        'sold'                     => 'Terjual',
+                        'disposed'                 => 'Dihapuskan / Musnah',
+                        'administratively_deleted' => 'Pghps. Administratif',
+                        'destroyed'                => 'Dimusnahkan',
+                        default                    => $state,
+                    }),
+                Tables\Columns\TextColumn::make('kondisi')
                     ->label('Kondisi')
                     ->badge()
                     ->sortable()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'stock'                    => 'Stok Tersedia',
-                        'active'                   => 'Aktif / Digunakan',
-                        'borrowed'                 => 'Dipinjam',
-                        'maintenance'              => 'Dalam Perbaikan',
+                        'good'                     => 'Baik',
                         'minor_damage'             => 'Rusak Ringan',
                         'major_damage'             => 'Rusak Berat',
-                        'lost'                     => 'Hilang',
-                        'sold'                     => 'Terjual',
-                        'administratively_deleted' => 'Pghps. Administratif',
-                        'destroyed'                => 'Dimusnahkan',
                         default                    => $state,
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'good'         => 'success',
+                        'minor_damage' => 'warning',
+                        'major_damage' => 'danger',
+                        default        => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('campus.name')
                     ->label('Gedung')
@@ -496,18 +520,24 @@ class AssetResource extends Resource
                     ->label('PIC')
                     ->relationship('pic', 'name'),
                 Tables\Filters\SelectFilter::make('status')
-                    ->label('Kondisi')
+                    ->label('Status')
                     ->options([
-                        'stock'                    => 'Stok Tersedia',
+                        'stock'                    => 'Stok (Gudang)',
                         'active'                   => 'Aktif / Digunakan',
                         'borrowed'                 => 'Dipinjam',
                         'maintenance'              => 'Dalam Perbaikan',
-                        'minor_damage'             => 'Rusak Ringan',
-                        'major_damage'             => 'Rusak Berat',
                         'lost'                     => 'Hilang',
                         'sold'                     => 'Terjual',
+                        'disposed'                 => 'Dihapuskan / Musnah',
                         'administratively_deleted' => 'Penghapusan Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                    ]),
+                Tables\Filters\SelectFilter::make('kondisi')
+                    ->label('Kondisi')
+                    ->options([
+                        'good'                     => 'Baik',
+                        'minor_damage'             => 'Rusak Ringan',
+                        'major_damage'             => 'Rusak Berat',
                     ]),
                 Tables\Filters\SelectFilter::make('ownership')
                     ->label('Sumber Dana')
@@ -538,36 +568,46 @@ class AssetResource extends Resource
                                 ->openUrlInNewTab(),
                         ]),
                     \Filament\Actions\Action::make('changeStatus')
-                        ->label('Ubah Kondisi')
+                        ->label('Ubah Status/Kondisi')
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
                         ->visible(fn ($record) => Auth::user()->hasPermissionTo('status.update') && ($record instanceof \App\Models\Asset ? !$record->trashed() : true))
                         ->form([
                             Components\Select::make('new_status')
-                                ->label('Kondisi Baru')
+                                ->label('Status Baru')
                                 ->options([
-                                    'stock'                    => 'Stok Tersedia',
+                                    'stock'                    => 'Stok (Gudang)',
                                     'active'                   => 'Aktif / Digunakan',
                                     'borrowed'                 => 'Dipinjam',
                                     'maintenance'              => 'Dalam Perbaikan',
-                                    'minor_damage'             => 'Rusak Ringan',
-                                    'major_damage'             => 'Rusak Berat',
                                     'lost'                     => 'Hilang (Butuh Approval)',
                                     'sold'                     => 'Terjual',
-                                    'administratively_deleted' => 'Penghapusan Administratif',
+                                    'disposed'                 => 'Dihapuskan / Musnah',
+                                    'administratively_deleted' => 'Penghapusan Administratif (Butuh Approval)',
                                     'destroyed'                => 'Dimusnahkan (Butuh Approval)',
                                 ])
-                                ->required(),
+                                ->required()
+                                ->default(fn ($record) => $record->status),
+                            Components\Select::make('new_kondisi')
+                                ->label('Kondisi Baru')
+                                ->options([
+                                    'good'                     => 'Baik',
+                                    'minor_damage'             => 'Rusak Ringan',
+                                    'major_damage'             => 'Rusak Berat',
+                                ])
+                                ->required()
+                                ->default(fn ($record) => $record->kondisi),
                             Components\Textarea::make('reason')
                                 ->label('Alasan Perubahan')
                                 ->required()
                         ])
                         ->action(function (Asset $record, array $data) {
                             $newStatus = $data['new_status'];
+                            $newKondisi = $data['new_kondisi'];
                             $reason = $data['reason'];
     
                             try {
-                                \Illuminate\Support\Facades\DB::transaction(function () use ($record, $newStatus, $reason) {
+                                \Illuminate\Support\Facades\DB::transaction(function () use ($record, $newStatus, $newKondisi, $reason) {
                                     $lockedAsset = Asset::where('id', $record->id)->lockForUpdate()->first();
     
                                     if (in_array($newStatus, ['lost', 'destroyed'])) {
@@ -586,14 +626,19 @@ class AssetResource extends Resource
                                             'status'       => 'pending',
                                             'reason'       => $reason,
                                             'payload'      => json_encode([
-                                                'asset_id'   => $record->id,
-                                                'new_status' => $newStatus,
-                                                'old_status' => $lockedAsset->status
+                                                'asset_id'    => $record->id,
+                                                'new_status'  => $newStatus,
+                                                'old_status'  => $lockedAsset->status,
+                                                'new_kondisi' => $newKondisi,
+                                                'old_kondisi' => $lockedAsset->kondisi,
                                             ])
                                         ]);
                                     } else {
                                         request()->merge(['status_change_reason' => $reason]);
-                                        $lockedAsset->update(['status' => $newStatus]);
+                                        $lockedAsset->update([
+                                            'status' => $newStatus,
+                                            'kondisi' => $newKondisi,
+                                        ]);
                                     }
                                 });
     

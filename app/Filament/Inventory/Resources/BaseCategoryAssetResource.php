@@ -77,14 +77,13 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->label('Status')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'stock'                   => 'Stok Tersedia',
+                        'stock'                   => 'Stok (Gudang)',
                         'active'                  => 'Aktif / Digunakan',
                         'borrowed'                => 'Dipinjam',
                         'maintenance'             => 'Dalam Perbaikan',
-                        'minor_damage'            => 'Rusak Ringan',
-                        'major_damage'            => 'Rusak Berat',
                         'lost'                    => 'Hilang',
                         'sold'                    => 'Terjual',
+                        'disposed'                => 'Dihapuskan / Musnah',
                         'administratively_deleted'=> 'Penghapusan Administratif',
                         'destroyed'               => 'Dimusnahkan',
                         default                   => $state,
@@ -94,13 +93,28 @@ abstract class BaseCategoryAssetResource extends Resource
                         'active'                  => 'success',
                         'borrowed'                => 'warning',
                         'maintenance'             => 'warning',
-                        'minor_damage'            => 'warning',
                         'major_damage'            => 'danger',
                         'lost'                    => 'danger',
                         'sold'                    => 'gray',
                         'administratively_deleted'=> 'gray',
                         'destroyed'               => 'danger',
                         default                   => 'gray',
+                    })
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('kondisi')
+                    ->label('Kondisi')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'good'                     => 'Baik',
+                        'minor_damage'             => 'Rusak Ringan',
+                        'major_damage'             => 'Rusak Berat',
+                        default                    => $state,
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'good'         => 'success',
+                        'minor_damage' => 'warning',
+                        'major_damage' => 'danger',
+                        default        => 'gray',
                     })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('campus.name')
@@ -149,16 +163,22 @@ abstract class BaseCategoryAssetResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Status')
                     ->options([
-                        'stock'                    => 'Stok Tersedia',
+                        'stock'                    => 'Stok (Gudang)',
                         'active'                   => 'Aktif / Digunakan',
                         'borrowed'                 => 'Dipinjam',
                         'maintenance'              => 'Dalam Perbaikan',
-                        'minor_damage'             => 'Rusak Ringan',
-                        'major_damage'             => 'Rusak Berat',
                         'lost'                     => 'Hilang',
                         'sold'                     => 'Terjual',
+                        'disposed'                 => 'Dihapuskan / Musnah',
                         'administratively_deleted' => 'Penghapusan Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                    ]),
+                Tables\Filters\SelectFilter::make('kondisi')
+                    ->label('Kondisi')
+                    ->options([
+                        'good'                     => 'Baik',
+                        'minor_damage'             => 'Rusak Ringan',
+                        'major_damage'             => 'Rusak Berat',
                     ]),
                 Tables\Filters\Filter::make('campus_location')
                     ->form([

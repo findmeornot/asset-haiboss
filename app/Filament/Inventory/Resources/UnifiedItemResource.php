@@ -56,6 +56,10 @@ class UnifiedItemResource extends Resource
                     ->label('Nama Barang')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('brand')
+                    ->label('Merk/Tipe')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('category_name')
                     ->label('Kategori')
                     ->searchable()

@@ -70,7 +70,7 @@ class DummyDataSeeder extends Seeder
             'Switch HP 24 Port', 'UPS APC 1000VA', 'Kamera CCTV Hikvision',
             'Scanner Fujitsu', 'Monitor LG 24 inch', 'Keyboard Logitech', 'Mouse Wireless',
         ];
-        $statuses   = ['active', 'stock', 'borrowed', 'maintenance'];
+        $statuses   = ['active', 'stock', 'borrowed', 'maintenance', 'minor_damage'];
         $ownerships = ['company', 'grant', 'loan'];
 
         for ($i = 1; $i <= 50; $i++) {

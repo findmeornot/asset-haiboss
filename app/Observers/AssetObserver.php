@@ -41,14 +41,12 @@ class AssetObserver
         $changes = $asset->getChanges();
         $original = array_intersect_key($asset->getOriginal(), $changes);
 
-        // Check for Status/Kondisi Change
-        if ($asset->wasChanged('status') || $asset->wasChanged('kondisi')) {
+        // Check for Status Change
+        if ($asset->wasChanged('status')) {
             AssetStatusHistory::create([
                 'asset_id' => $asset->id,
                 'old_status' => $asset->getOriginal('status'),
                 'new_status' => $asset->status,
-                'old_kondisi' => $asset->getOriginal('kondisi'),
-                'new_kondisi' => $asset->kondisi,
                 'changed_by' => $userId,
             ]);
             AuditLogger::log('status_change', $asset, $original, $changes, request()->input('status_change_reason'));

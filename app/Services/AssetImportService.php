@@ -37,7 +37,6 @@ class AssetImportService
         'Gedung',
         'Ruangan',
         'PIC',
-        'Status',
         'Kondisi',
         'Harga Perolehan',
         'Keterangan',
@@ -58,42 +57,33 @@ class AssetImportService
     ];
 
     /**
-     * Mapping dari display value Status → internal value (status).
+     * Mapping dari display value Kondisi → internal value (status).
      */
     public const STATUS_MAP = [
-        'stok (gudang)'             => 'stock',
+        'stok tersedia'             => 'stock',
         'stok'                      => 'stock',
         'stock'                     => 'stock',
         'aktif / digunakan'         => 'active',
         'aktif'                     => 'active',
         'active'                    => 'active',
+        'baik'                      => 'active',
         'dipinjam'                  => 'borrowed',
         'borrowed'                  => 'borrowed',
         'dalam perbaikan'           => 'maintenance',
         'perbaikan'                 => 'maintenance',
         'maintenance'               => 'maintenance',
-        'hilang'                    => 'lost',
-        'lost'                      => 'lost',
-        'terjual'                   => 'sold',
-        'sold'                      => 'sold',
-        'dihapuskan / musnah'       => 'disposed',
-        'disposed'                  => 'disposed',
-        'penghapusan administratif' => 'administratively_deleted',
-        'administratively_deleted'  => 'administratively_deleted',
-        'dimusnahkan'               => 'destroyed',
-        'destroyed'                 => 'destroyed',
-    ];
-
-    /**
-     * Mapping dari display value Kondisi → internal value (kondisi).
-     */
-    public const KONDISI_MAP = [
-        'baik'                      => 'good',
-        'good'                      => 'good',
         'rusak ringan'              => 'minor_damage',
         'minor_damage'              => 'minor_damage',
         'rusak berat'               => 'major_damage',
         'major_damage'              => 'major_damage',
+        'hilang'                    => 'lost',
+        'lost'                      => 'lost',
+        'terjual'                   => 'sold',
+        'sold'                      => 'sold',
+        'penghapusan administratif' => 'administratively_deleted',
+        'administratively_deleted'  => 'administratively_deleted',
+        'dimusnahkan'               => 'destroyed',
+        'destroyed'                 => 'destroyed',
     ];
 
     /**
@@ -107,6 +97,7 @@ class AssetImportService
         'Ruang'                 => 'Ruangan',
         'Gedung (Kampus)'       => 'Gedung',
         'Kepemilikan'           => 'Sumber Dana',
+        'Status'                => 'Kondisi',
         'Status Barang'         => 'Kondisi',
         'Nomor Inventaris'      => 'Kode',
         'Inventory Number'      => 'Kode',
@@ -372,27 +363,16 @@ class AssetImportService
             // Tidak divalidasi keberadaannya — jika belum ada di sistem akan dibuat otomatis saat import
 
             // ──────────────────────────────────────────
-            // 11. Status (status) — wajib
-            // ──────────────────────────────────────────
-            $statusRaw = trim($row['Status'] ?? '');
-            if (empty($statusRaw)) {
-                $rowErrors[] = ['field' => 'Status', 'message' => 'Status tidak boleh kosong.'];
-            } else {
-                if (!isset(self::STATUS_MAP[mb_strtolower($statusRaw)])) {
-                    $validStatus = implode(', ', array_unique(array_keys(self::STATUS_MAP)));
-                    $rowErrors[]  = ['field' => 'Status', 'message' => "Status \"{$statusRaw}\" tidak valid. Gunakan salah satu dari: {$validStatus}."];
-                }
-            }
-
-            // ──────────────────────────────────────────
-            // 11b. Kondisi (kondisi) — wajib
+            // 11. Kondisi (status) — wajib
             // ──────────────────────────────────────────
             $kondisiRaw = trim($row['Kondisi'] ?? '');
+            $statusVal  = null;
             if (empty($kondisiRaw)) {
                 $rowErrors[] = ['field' => 'Kondisi', 'message' => 'Kondisi tidak boleh kosong.'];
             } else {
-                if (!isset(self::KONDISI_MAP[mb_strtolower($kondisiRaw)])) {
-                    $validKondisi = implode(', ', array_unique(array_keys(self::KONDISI_MAP)));
+                $statusVal = self::STATUS_MAP[mb_strtolower($kondisiRaw)] ?? null;
+                if (!$statusVal) {
+                    $validKondisi = 'Stok Tersedia, Aktif / Digunakan, Dipinjam, Dalam Perbaikan, Rusak Ringan, Rusak Berat, Hilang, Terjual, Penghapusan Administratif, Dimusnahkan';
                     $rowErrors[]  = ['field' => 'Kondisi', 'message' => "Kondisi \"{$kondisiRaw}\" tidak valid. Gunakan salah satu dari: {$validKondisi}."];
                 }
             }
@@ -513,8 +493,7 @@ class AssetImportService
             }
 
             $ownershipVal = self::OWNERSHIP_MAP[mb_strtolower(trim($row['Sumber Dana'] ?? ''))] ?? 'company';
-            $statusVal    = self::STATUS_MAP[mb_strtolower(trim($row['Status'] ?? ''))] ?? 'stock';
-            $kondisiVal   = self::KONDISI_MAP[mb_strtolower(trim($row['Kondisi'] ?? ''))] ?? 'good';
+            $statusVal    = self::STATUS_MAP[mb_strtolower(trim($row['Kondisi'] ?? ''))] ?? 'stock';
 
             // Tahun perolehan → purchase_date: null jika kosong/strip (tidak diketahui)
             $tahunRaw     = trim((string) ($row['Tahun Perolehan'] ?? ''));
@@ -563,7 +542,6 @@ class AssetImportService
                 'location_id'       => $location?->id,
                 'pic_id'            => $pic?->id,
                 'status'            => $statusVal,
-                'kondisi'           => $kondisiVal,
                 'notes'             => $notesRaw ?: null,
             ];
 

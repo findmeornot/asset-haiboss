@@ -36,7 +36,7 @@
                     <th style="background-color: #d9d9d9;">Status</th>
                     <th style="background-color: #d9d9d9;">Total Item</th>
                 @else
-                    {{-- 17 kolom laporan aset sesuai requirement Kak Qory + Kondisi --}}
+                    {{-- 17 kolom laporan aset sesuai requirement Kak Qory --}}
                     <th style="background-color: #d9d9d9;">Kode</th>
                     <th style="background-color: #d9d9d9;">Kategori Akuntansi</th>
                     <th style="background-color: #d9d9d9;">Kategori</th>
@@ -50,7 +50,6 @@
                     <th style="background-color: #d9d9d9;">Gedung</th>
                     <th style="background-color: #d9d9d9;">Ruangan</th>
                     <th style="background-color: #d9d9d9;">PIC</th>
-                    <th style="background-color: #d9d9d9;">Status</th>
                     <th style="background-color: #d9d9d9;">Kondisi</th>
                     <th style="background-color: #d9d9d9;">Harga Perolehan</th>
                     <th style="background-color: #d9d9d9;">Keterangan</th>
@@ -91,21 +90,15 @@
                         <td>{{ $row->location->name ?? '-' }}</td>
                         <td>{{ $row->pic->name ?? '-' }}</td>
                         <td>{{ match($row->status) {
-                            'stock' => 'Stok (Gudang)',
+                            'stock' => 'Stok Tersedia',
                             'active' => 'Aktif / Digunakan',
                             default => $row->status ?? '-',
-                        } }}</td>
-                        <td>{{ match($row->kondisi) {
-                            'good' => 'Baik',
-                            'minor_damage' => 'Rusak Ringan',
-                            'major_damage' => 'Rusak Berat',
-                            default => $row->kondisi ?? '-',
                         } }}</td>
                         <td>-</td>
                         <td>{{ $row->notes ?? '-' }}</td>
                     @else
                         {{--
-                            Mapping 18 kolom:
+                            Mapping 17 kolom:
                             1.  No              → index + 1 (sudah di atas)
                             2.  Kode            → inventory_number
                             3.  Kat. Akuntansi  → classification.name
@@ -120,10 +113,9 @@
                             12. Gedung          → campus.name  (campus_id = Gedung di sistem)
                             13. Ruangan         → location.name
                             14. PIC             → pic.name
-                            15. Status          → status
-                            16. Kondisi         → kondisi
-                            17. Harga Perolehan → purchaseItem.unit_price
-                            18. Keterangan      → notes
+                            15. Kondisi         → status
+                            16. Harga Perolehan → purchaseItem.unit_price
+                            17. Keterangan      → notes
                         --}}
 
                         {{-- 2. Kode --}}
@@ -170,26 +162,19 @@
                         {{-- 14. PIC --}}
                         <td>{{ $row->pic->name ?? '-' }}</td>
 
-                        {{-- 15. Status --}}
+                        {{-- 15. Kondisi --}}
                         <td>{{ match($row->status) {
-                            'stock'                    => 'Stok (Gudang)',
+                            'stock'                    => 'Stok Tersedia',
                             'active'                   => 'Aktif / Digunakan',
                             'borrowed'                 => 'Dipinjam',
                             'maintenance'              => 'Dalam Perbaikan',
+                            'minor_damage'             => 'Rusak Ringan',
+                            'major_damage'             => 'Rusak Berat',
                             'lost'                     => 'Hilang',
                             'sold'                     => 'Terjual',
-                            'disposed'                 => 'Dihapuskan / Musnah',
                             'administratively_deleted' => 'Penghapusan Administratif',
                             'destroyed'                => 'Dimusnahkan',
                             default                    => $row->status ?? '-',
-                        } }}</td>
-
-                        {{-- 16. Kondisi --}}
-                        <td>{{ match($row->kondisi) {
-                            'good'                     => 'Baik',
-                            'minor_damage'             => 'Rusak Ringan',
-                            'major_damage'             => 'Rusak Berat',
-                            default                    => $row->kondisi ?? '-',
                         } }}</td>
 
                         {{-- 16. Harga Perolehan --}}

@@ -44,7 +44,6 @@ class UnifiedItem extends Model
                     'locations.name as location_name',
                     'purchase_items.unit_price as price',
                     'assets.status as status',
-                    'assets.kondisi as kondisi',
                     'assets.created_at as created_at'
                 );
 
@@ -67,7 +66,6 @@ class UnifiedItem extends Model
                     'locations.name as location_name',
                     DB::raw("NULL as price"),
                     DB::raw("'available' as status"),
-                    'inventory_balances.kondisi as kondisi',
                     'inventory_balances.created_at as created_at'
                 );
 

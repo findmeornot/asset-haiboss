@@ -64,7 +64,7 @@ class UnifiedItem extends Model
                     'categories.name as category_name',
                     'inventory_balances.name as item_name',
                     'inventory_balances.brand as brand',
-                    DB::raw("COALESCE(classifications.name, 'Persediaan Barang') as classification_name"),
+                    DB::raw("COALESCE(classifications.name, 'Barang Habis Pakai') as classification_name"),
                     'inventory_balances.quantity as quantity',
                     'locations.name as location_name',
                     DB::raw("NULL as price"),

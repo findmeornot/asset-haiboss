@@ -22,7 +22,7 @@ class SupplyRoutingRegressionTest extends TestCase
         // Setup Classifications globally for tests
         Classification::create(['name' => 'ASET', 'slug' => 'aset']);
         Classification::create(['name' => 'INVENTARIS', 'slug' => 'inventaris']);
-        Classification::create(['name' => 'PERSEDIAAN BARANG', 'slug' => 'persediaan-barang']);
+        Classification::create(['name' => 'BARANG HABIS PAKAI', 'slug' => 'barang-habis-pakai']);
     }
 
     private function simulateCreationFlow(string $classificationSlug, Category $category, int $qty, string $itemName = 'Test Item')
@@ -86,7 +86,7 @@ class SupplyRoutingRegressionTest extends TestCase
     public function test_case_5_supply_with_asset_category()
     {
         $category = Category::create(['name' => 'Cat 5', 'type' => 'asset', 'code' => 'C5']);
-        $this->simulateCreationFlow('persediaan-barang', $category, 1, 'Sup 5');
+        $this->simulateCreationFlow('barang-habis-pakai', $category, 1, 'Sup 5');
 
         // MUST route to Supply Path because Classification = persediaan-barang
         $this->assertEquals(0, Asset::where('name', 'Sup 5')->count());
@@ -96,7 +96,7 @@ class SupplyRoutingRegressionTest extends TestCase
     public function test_case_6_supply_with_supply_category()
     {
         $category = Category::create(['name' => 'Cat 6', 'type' => 'supply', 'code' => 'C6']);
-        $this->simulateCreationFlow('persediaan-barang', $category, 1, 'Sup 6');
+        $this->simulateCreationFlow('barang-habis-pakai', $category, 1, 'Sup 6');
 
         $this->assertEquals(0, Asset::where('name', 'Sup 6')->count());
         $this->assertEquals(1, InventoryBalance::where('name', 'Sup 6')->count());

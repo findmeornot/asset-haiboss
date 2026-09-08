@@ -14,7 +14,7 @@ class Category extends Model {
     public const TYPES = [
         'asset'     => 'Aset',
         'inventory' => 'Inventaris',
-        'supply'    => 'Persediaan',
+        'supply'    => 'Barang Habis Pakai',
     ];
 
     public function scopeOfType($query, string $type)

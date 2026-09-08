@@ -30,6 +30,11 @@ class ApprovalRequestResource extends Resource
     {
         return 'Approval Request';
     }
+
+    public static function getPluralModelLabel(): string
+    {
+        return 'Approval Request';
+    }
     
     public static function canCreate(): bool { return false; }
 

@@ -31,6 +31,11 @@ class AuditLogResource extends Resource
         return 'Audit Trail';
     }
 
+    public static function getPluralModelLabel(): string
+    {
+        return 'Audit Trail';
+    }
+
     public static function getNavigationLabel(): string
     {
         return 'Audit Trail';

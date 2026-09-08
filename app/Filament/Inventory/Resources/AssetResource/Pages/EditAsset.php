@@ -99,12 +99,12 @@ class EditAsset extends EditRecord
                     $classification = $this->record->classification;
                     if ($classification && strtolower($classification->slug) === 'aset' && $newPrice < 1000000) {
                         throw \Illuminate\Validation\ValidationException::withMessages([
-                            'purchase_data.unit_price' => 'Aset harus memiliki harga perolehan >= Rp1.000.000.',
+                            'data.purchase_data.unit_price' => 'Aset harus memiliki harga perolehan >= Rp1.000.000.',
                         ]);
                     }
                     if ($classification && strtolower($classification->slug) === 'inventaris' && $newPrice >= 1000000) {
                         throw \Illuminate\Validation\ValidationException::withMessages([
-                            'purchase_data.unit_price' => 'Inventaris harus memiliki harga perolehan < Rp1.000.000.',
+                            'data.purchase_data.unit_price' => 'Inventaris harus memiliki harga perolehan < Rp1.000.000.',
                         ]);
                     }
                     // Price is valid, allow it to be set

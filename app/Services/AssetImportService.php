@@ -61,7 +61,7 @@ class AssetImportService
      * Mapping dari display value Status → internal value (status).
      */
     public const STATUS_MAP = [
-        'stok (gudang)'             => 'stock',
+        'stok'                      => 'stock',
         'stok'                      => 'stock',
         'stock'                     => 'stock',
         'aktif / digunakan'         => 'active',
@@ -246,7 +246,7 @@ class AssetImportService
             if (empty($classificationName)) {
                 $rowErrors[] = ['field' => 'Kategori Akuntansi', 'message' => 'Kategori Akuntansi tidak boleh kosong.'];
             } else {
-                $classification = $classifications->get(mb_strtolower($classificationName));
+                $classification = self::resolveClassification($classifications, $classificationName);
                 if (!$classification) {
                     $rowErrors[] = ['field' => 'Kategori Akuntansi', 'message' => "Kategori Akuntansi \"{$classificationName}\" tidak ditemukan di master data."];
                 }
@@ -300,12 +300,13 @@ class AssetImportService
             // Anggap kosong atau strip/dash sebagai "tidak diketahui"
             $tahunUnknown = $tahunRaw === '' || preg_match('/^-+$/', $tahunRaw);
             if (!$tahunUnknown) {
-                if (!preg_match('/^\d{4}$/', $tahunRaw)) {
-                    $rowErrors[] = ['field' => 'Tahun Perolehan', 'message' => "Tahun Perolehan harus berupa 4 digit tahun (contoh: 2024). Nilai \"{$tahunRaw}\" tidak valid."];
+                $parsedDate = self::parseImportDate($tahunRaw);
+                if (!$parsedDate) {
+                    $rowErrors[] = ['field' => 'Tahun Perolehan', 'message' => "Tahun Perolehan harus berupa 4 digit tahun (contoh: 2024) atau format tanggal (contoh: 14/03/2026 atau 2026-03-14). Nilai \"{$tahunRaw}\" tidak valid."];
                 } else {
-                    $yr = (int) $tahunRaw;
+                    $yr = (int) date('Y', strtotime($parsedDate));
                     if ($yr < 1900 || $yr > (int) date('Y') + 5) {
-                        $rowErrors[] = ['field' => 'Tahun Perolehan', 'message' => "Tahun Perolehan \"{$tahunRaw}\" di luar rentang yang wajar."];
+                        $rowErrors[] = ['field' => 'Tahun Perolehan', 'message' => "Tahun Perolehan \"{$tahunRaw}\" (Tahun {$yr}) di luar rentang yang wajar."];
                     } else {
                         $tahun = $yr;
                     }
@@ -447,6 +448,8 @@ class AssetImportService
      */
     public function import(array $rows): int
     {
+        
+
         // Pre-load semua master data
         $classifications = Classification::all()->keyBy(fn($c) => mb_strtolower($this->cleanString($c->name)));
         $categories      = Category::all()->keyBy(fn($c) => mb_strtolower($this->cleanString($c->name)));
@@ -457,7 +460,8 @@ class AssetImportService
         $count = 0;
 
         foreach ($rows as $row) {
-            $classification = $classifications->get(mb_strtolower($this->cleanString($row['Kategori Akuntansi'] ?? '')));
+            $classificationName = $this->cleanString($row['Kategori Akuntansi'] ?? '');
+            $classification = self::resolveClassification($classifications, $classificationName);
             $campus         = $campuses->get(mb_strtolower($this->cleanString($row['Gedung'] ?? '')));
 
             // Cari kategori; jika belum ada → buat otomatis dan attach ke classification
@@ -519,8 +523,8 @@ class AssetImportService
             // Tahun perolehan → purchase_date: null jika kosong/strip (tidak diketahui)
             $tahunRaw     = trim((string) ($row['Tahun Perolehan'] ?? ''));
             $tahunUnknown = $tahunRaw === '' || preg_match('/^-+$/', $tahunRaw);
-            $tahun        = (!$tahunUnknown && preg_match('/^\d{4}$/', $tahunRaw)) ? (int) $tahunRaw : null;
-            $purchaseDate = $tahun ? "{$tahun}-01-01" : null;
+            $purchaseDate = !$tahunUnknown ? self::parseImportDate($tahunRaw) : null;
+            $tahun        = $purchaseDate ? (int) date('Y', strtotime($purchaseDate)) : null;
 
             // Harga: normalisasi (kosong/strip = tidak diketahui)
             $hargaRaw     = trim((string) ($row['Harga Perolehan'] ?? ''));
@@ -570,7 +574,7 @@ class AssetImportService
             // ──────────────────────────────────────────────────────────────
             // SUPPLY PATH: update InventoryBalance saldo — no Asset records
             // ──────────────────────────────────────────────────────────────
-            if ($classification && strtolower($classification->slug) === 'persediaan-barang') {
+            if ($classification && strtolower($classification->slug) === 'barang-habis-pakai') {
                 // Create Purchase header for traceability
                 $purchase = Purchase::create([
                     'purchase_date' => $purchaseDate,
@@ -583,7 +587,7 @@ class AssetImportService
                 $balance = InventoryBalance::where([
                     'category_id' => $category->id,
                     'name'        => $balanceName,
-                    'brand'       => trim($row['Merk/Tipe'] ?? ''),
+                    'brand'       => trim($row['Merk/Tipe'] ?? '') ?: null,
                     'location_id' => $location?->id,
                 ])->first();
 
@@ -593,15 +597,27 @@ class AssetImportService
                     $balance = InventoryBalance::create([
                         'category_id' => $category->id,
                         'name'        => $balanceName,
-                        'brand'       => trim($row['Merk/Tipe'] ?? ''),
+                    'brand'       => trim($row['Merk/Tipe'] ?? ''),
+                        
                         'location_id' => $location?->id,
                         'campus_id' => $campus?->id,
                         'quantity'  => 0,
                         'master_barcode' => SupplyBarcodeGenerator::generateMaster(),
                         'latest_sequence' => 0,
                         'has_pure_master_unit' => false,
+                        'pic_id'      => $pic?->id,
+                        'status'      => $statusVal,
+                        'kondisi'     => $kondisiVal,
+                        'notes'       => $notesRaw ?: null,
                     ]);
                     $isNewBalance = true;
+                } else {
+                    $balance->update(array_filter([
+                        'pic_id'  => $pic?->id,
+                        'status'  => $statusVal,
+                        'kondisi' => $kondisiVal,
+                        'notes'   => $notesRaw ?: null,
+                    ]));
                 }
 
                 // Add purchased quantity to the running balance
@@ -818,5 +834,45 @@ class AssetImportService
         }
 
         return ['headers' => $headers, 'rows' => $rows];
+    }
+
+    /**
+     * Parse date string into Y-m-d format.
+     * Supports:
+     * - YYYY (e.g. 2026) -> 2026-01-01
+     * - DD/MM/YYYY or DD-MM-YYYY (e.g. 14/03/2026) -> 2026-03-14
+     * - YYYY-MM-DD or YYYY/MM/DD (e.g. 2026-03-14) -> 2026-03-14
+     */
+    public static function parseImportDate(string $dateStr): ?string
+    {
+        $dateStr = trim($dateStr);
+        if (preg_match('/^\d{4}$/', $dateStr)) {
+            return $dateStr . '-01-01';
+        }
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $dateStr, $m)) {
+            return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+        }
+        if (preg_match('/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/', $dateStr, $m)) {
+            return sprintf('%04d-%02d-%02d', $m[1], $m[2], $m[3]);
+        }
+        return null;
+    }
+
+    /**
+     * Helper to resolve classification, supporting legacy aliases for Supply.
+     */
+    private static function resolveClassification($classifications, string $name)
+    {
+        $normalized = mb_strtolower($name);
+        
+        // Alias support for "Barang Habis Pakai" / "Persediaan"
+        $supplyAliases = ['persediaan', 'persediaan barang', 'barang habis pakai'];
+        if (in_array($normalized, $supplyAliases)) {
+            return $classifications->first(function ($c) use ($supplyAliases) {
+                return in_array(mb_strtolower($c->name), $supplyAliases) || in_array($c->slug, ['persediaan-barang', 'barang-habis-pakai']);
+            });
+        }
+        
+        return $classifications->get($normalized);
     }
 }

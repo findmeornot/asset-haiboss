@@ -32,12 +32,12 @@ class InventoryBalanceResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'Persediaan';
+        return 'Barang Habis Pakai';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Persediaan';
+        return 'Barang Habis Pakai';
     }
 
     public static function form(Schema $schema): Schema
@@ -51,26 +51,32 @@ class InventoryBalanceResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Barang')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('brand')
                     ->label('Merk/Tipe')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Kategori')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('campus.name')
                     ->label('Kampus / Gedung')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('location.name')
                     ->label('Lokasi / Ruangan')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Stok Tersedia')
+                    ->toggleable()
                     ->numeric()
                     ->sortable()
                     ->badge()

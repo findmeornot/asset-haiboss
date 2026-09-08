@@ -31,6 +31,11 @@ class StockOpnameResource extends Resource
         return 'Stock Opname';
     }
 
+    public static function getPluralModelLabel(): string
+    {
+        return 'Stock Opname';
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema

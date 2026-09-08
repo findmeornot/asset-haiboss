@@ -3,10 +3,13 @@
 namespace App\Filament\Inventory\Resources\InventoryCategoryResource\Pages;
 
 use App\Filament\Inventory\Resources\InventoryCategoryResource;
+use App\Filament\Inventory\Resources\Traits\HasCleanFilterUrls;
 use Filament\Resources\Pages\ListRecords;
 
 class ListInventoryCategory extends ListRecords
 {
+    use HasCleanFilterUrls;
+
     protected static string $resource = InventoryCategoryResource::class;
 
     protected function getHeaderActions(): array

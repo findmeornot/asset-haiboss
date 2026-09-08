@@ -86,7 +86,7 @@ class InventoryNumberGenerator
         $map = [
             'ASET'             => 'AST',
             'INVENTARIS'       => 'IVT',   // bukan INV agar tidak bentrok dengan prefix
-            'PERSEDIAAN BARANG'=> 'PRD',
+            'BARANG HABIS PAKAI'=> 'BHP',
         ];
 
         if (isset($map[$name])) {

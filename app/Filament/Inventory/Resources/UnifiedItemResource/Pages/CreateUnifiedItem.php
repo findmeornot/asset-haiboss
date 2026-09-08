@@ -129,7 +129,7 @@ class CreateUnifiedItem extends CreateRecord
                 'is_capitalized'    => \App\Models\PurchaseItem::isCapitalizable($unitPrice, $classification),
             ];
 
-            if ($classification && strtolower($classification->slug) === 'persediaan-barang') {
+            if ($classification && strtolower($classification->slug) === 'barang-habis-pakai') {
                 // 2a. Supply path: update InventoryBalance — NO individual Asset records created.
                 $this->isSupplyCreation = true;
 
@@ -137,6 +137,7 @@ class CreateUnifiedItem extends CreateRecord
                     [
                         'category_id' => $data['category_id'],
                         'name'        => $data['name'] ?? 'Asset Baru',
+                        'brand'       => $data['brand'] ?? null,
                         'location_id' => $data['location_id'] ?? null,
                     ]
                 )->first();
@@ -239,7 +240,7 @@ class CreateUnifiedItem extends CreateRecord
             return \App\Filament\Inventory\Resources\AssetCategoryResource::getUrl('index');
         } elseif ($this->createdClassificationSlug === 'inventaris') {
             return \App\Filament\Inventory\Resources\InventoryCategoryResource::getUrl('index');
-        } elseif ($this->createdClassificationSlug === 'persediaan-barang') {
+        } elseif ($this->createdClassificationSlug === 'barang-habis-pakai') {
             return \App\Filament\Inventory\Resources\InventoryBalanceResource::getUrl('index');
         }
 

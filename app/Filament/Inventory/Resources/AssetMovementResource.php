@@ -20,12 +20,22 @@ class AssetMovementResource extends Resource
         return 'heroicon-o-arrows-right-left';
     }
     
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function getNavigationGroup(): string | \UnitEnum | null
     {
         return 'Asset Management';
     }
 
     public static function getModelLabel(): string
+    {
+        return 'Mutasi Aset';
+    }
+
+    public static function getPluralModelLabel(): string
     {
         return 'Mutasi Aset';
     }

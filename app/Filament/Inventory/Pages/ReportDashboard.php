@@ -61,7 +61,7 @@ class ReportDashboard extends Page implements HasForms
                             ->options([
                                 'aset_only' => 'Daftar Aset',
                                 'inventaris_only' => 'Daftar Inventaris',
-                                'persediaan_only' => 'Daftar Persediaan / Stok',
+                                'persediaan_only' => 'Daftar Barang Habis Pakai / Stok',
                                 'all_assets' => 'Daftar Seluruh Barang (Gabungan)',
                                 'by_location' => 'Barang per Lokasi',
                                 'by_campus' => 'Barang per Gedung',

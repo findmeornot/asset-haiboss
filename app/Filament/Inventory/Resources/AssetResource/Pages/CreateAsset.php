@@ -109,7 +109,7 @@ class CreateAsset extends CreateRecord
                 'is_capitalized'    => \App\Models\PurchaseItem::isCapitalizable($unitPrice, $classification),
             ];
 
-            if ($classification && strtolower($classification->slug) === 'persediaan-barang') {
+            if ($classification && strtolower($classification->slug) === 'barang-habis-pakai') {
                 // 2a. Supply path: update InventoryBalance — NO individual Asset records created.
                 $this->isSupplyCreation = true;
 

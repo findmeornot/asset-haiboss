@@ -10,7 +10,7 @@ class ClassificationSeeder extends Seeder
 {
     public function run(): void
     {
-        $classifications = ['Aset', 'Inventaris', 'Persediaan Barang'];
+        $classifications = ['Aset', 'Inventaris', 'Barang Habis Pakai'];
 
         foreach ($classifications as $name) {
             Classification::firstOrCreate(

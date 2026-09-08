@@ -47,7 +47,7 @@ class AssetResource extends Resource
             $id = $get('classification_id');
             return $id ? ($classifications[$id] ?? null) : null;
         };
-        $isPersediaan = fn (callable $get) => strtolower($getSlug($get) ?? '') === 'persediaan-barang';
+        $isPersediaan = fn (callable $get) => strtolower($getSlug($get) ?? '') === 'barang-habis-pakai';
         $isAset = fn (callable $get) => strtolower($getSlug($get) ?? '') === 'aset';
         $isInventaris = fn (callable $get) => strtolower($getSlug($get) ?? '') === 'inventaris';
 
@@ -385,10 +385,12 @@ class AssetResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('barcode')
                     ->label('Barcode')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('inventory_number')
                     ->label('SKU')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('classification.name')
@@ -398,22 +400,25 @@ class AssetResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Kategori')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Barang')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('brand')
                     ->label('Merk/Tipe')
                     ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('serial_number')
                     ->label('No. Seri')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
+                    ->toggleable()
                     ->badge()
                     ->sortable()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -430,6 +435,7 @@ class AssetResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('kondisi')
                     ->label('Kondisi')
+                    ->toggleable()
                     ->badge()
                     ->sortable()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -446,10 +452,12 @@ class AssetResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('campus.name')
                     ->label('Gedung')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('location.name')
                     ->label('Ruangan')
+                    ->toggleable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('pic.name')
                     ->label('PIC')
@@ -458,6 +466,7 @@ class AssetResource extends Resource
                 // Protected Financial columns — dual-path: new arch uses purchaseItem.unit_price, legacy uses purchase.total_price
                 Tables\Columns\TextColumn::make('purchaseItem.unit_price')
                     ->label('Harga Perolehan')
+                    ->toggleable()
                     ->money('idr')
                     ->sortable()
                     ->getStateUsing(function ($record): ?string {

@@ -29,7 +29,7 @@ abstract class BaseCategoryAssetResource extends Resource
         $slug = match (static::$categoryType) {
             'asset' => 'aset',
             'inventory' => 'inventaris',
-            'supply' => 'persediaan-barang',
+            'supply' => 'barang-habis-pakai',
             default => static::$categoryType,
         };
 
@@ -58,14 +58,22 @@ abstract class BaseCategoryAssetResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('inventory_number')
                     ->label('No. Inventaris')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Barang')
+                    ->toggleable()
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('brand')
+                    ->label('Merk/Tipe')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Kategori')
+                    ->toggleable()
                     ->searchable()
                     ->sortable()
                     ->badge(),
@@ -75,6 +83,7 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
+                    ->toggleable()
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'stock'                   => 'Stok (Gudang)',
@@ -103,6 +112,7 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('kondisi')
                     ->label('Kondisi')
+                    ->toggleable()
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'good'                     => 'Baik',
@@ -119,6 +129,7 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('campus.name')
                     ->label('Gedung')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('location.name')
@@ -130,7 +141,8 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('purchaseItem.unit_price')
-                    ->label('Harga Perolehan (per unit)')
+                    ->label('Harga Perolehan (per unit)
+                    ->toggleable()')
                     ->money('idr')
                     ->visible(fn () => Auth::user()->hasPermissionTo('financial.view'))
                     ->sortable()
@@ -154,7 +166,7 @@ abstract class BaseCategoryAssetResource extends Resource
                             $slug = match (static::$categoryType) {
                                 'asset' => 'aset',
                                 'inventory' => 'inventaris',
-                                'supply' => 'persediaan-barang',
+                                'supply' => 'barang-habis-pakai',
                                 default => static::$categoryType,
                             };
                             return $query->whereHas('classifications', fn($q) => $q->where('slug', $slug));

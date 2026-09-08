@@ -19,7 +19,7 @@ class AssetStatusChart extends ChartWidget
     }
 
     protected static array $labels = [
-        'stock' => 'Stok (Gudang)',
+        'stock' => 'Stok',
         'active' => 'Aktif / Digunakan',
         'borrowed' => 'Dipinjam',
         'maintenance' => 'Dalam Perbaikan',

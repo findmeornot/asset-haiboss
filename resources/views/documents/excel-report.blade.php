@@ -91,7 +91,7 @@
                         <td>{{ $row->location->name ?? '-' }}</td>
                         <td>{{ $row->pic->name ?? '-' }}</td>
                         <td>{{ match($row->status) {
-                            'stock' => 'Stok (Gudang)',
+                            'stock' => 'Stok',
                             'active' => 'Aktif / Digunakan',
                             default => $row->status ?? '-',
                         } }}</td>
@@ -172,7 +172,7 @@
 
                         {{-- 15. Status --}}
                         <td>{{ match($row->status) {
-                            'stock'                    => 'Stok (Gudang)',
+                            'stock'                    => 'Stok',
                             'active'                   => 'Aktif / Digunakan',
                             'borrowed'                 => 'Dipinjam',
                             'maintenance'              => 'Dalam Perbaikan',

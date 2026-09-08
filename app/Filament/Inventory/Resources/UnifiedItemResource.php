@@ -46,41 +46,51 @@ class UnifiedItemResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('barcode')
                     ->label('Barcode')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('sku')
                     ->label('SKU')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('item_name')
                     ->label('Nama Barang')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('brand')
                     ->label('Merk/Tipe')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('category_name')
                     ->label('Kategori')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('classification_name')
                     ->label('Klasifikasi')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('QTY')
+                    ->toggleable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('location_name')
                     ->label('Lokasi')
+                    ->toggleable()
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Harga Perolehan')
+                    ->toggleable()
                     ->money('idr')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
+                    ->toggleable()
                     ->badge()
                     ->formatStateUsing(fn (?string $state): string => match ($state) {
                         'stock'                    => 'Stok (Gudang)',
@@ -104,6 +114,7 @@ class UnifiedItemResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('kondisi')
                     ->label('Kondisi')
+                    ->toggleable()
                     ->badge()
                     ->formatStateUsing(fn (?string $state): string => match ($state) {
                         'good'         => 'Baik',

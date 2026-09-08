@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('inventory_balances', function (Blueprint $table) {
-            $table->foreignId('pic_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('pic_id')->nullable()->constrained('employees')->nullOnDelete();
             $table->string('status')->nullable()->default('stock');
             $table->text('notes')->nullable();
         });

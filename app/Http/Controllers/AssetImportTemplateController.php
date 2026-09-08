@@ -30,6 +30,7 @@ class AssetImportTemplateController extends Controller
             'Gedung',
             'Ruangan',
             'PIC',
+            'Status',
             'Kondisi',
             'Harga Perolehan',
             'Keterangan',
@@ -51,6 +52,7 @@ class AssetImportTemplateController extends Controller
             'Ruang B1',
             'John Doe',
             'Aktif / Digunakan',
+            'Baik',
             '8500000',
             'Laptop untuk laboratorium komputer',
         ];

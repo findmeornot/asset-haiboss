@@ -40,9 +40,9 @@ class BusinessRuleFinalTest extends TestCase
 
         $this->asetClass = Classification::create(['name' => 'Aset', 'slug' => 'aset']);
         $this->inventarisClass = Classification::create(['name' => 'Inventaris', 'slug' => 'inventaris']);
-        $this->persediaanClass = Classification::create(['name' => 'Persediaan Barang', 'slug' => 'persediaan-barang']);
+        $this->persediaanClass = Classification::create(['name' => 'Barang Habis Pakai', 'slug' => 'barang-habis-pakai']);
 
-        $this->category = Category::create(['name' => 'Elektronik', 'code' => 'ELK']);
+        $this->category = Category::create(['name' => 'Elektronik', 'code' => 'ELK', 'useful_life' => 4]);
         $this->category->classifications()->attach([$this->asetClass->id, $this->inventarisClass->id, $this->persediaanClass->id]);
 
         $this->campus = Campus::create(['name' => 'Gedung Utama']);
@@ -68,7 +68,7 @@ class BusinessRuleFinalTest extends TestCase
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $asset = Asset::first();
+        $asset = Asset::latest()->first();
         $this->assertNotNull($asset);
         $this->assertNull($asset->purchaseItem->unit_price);
         $this->assertFalse((bool)$asset->purchaseItem->is_capitalized);
@@ -97,7 +97,7 @@ class BusinessRuleFinalTest extends TestCase
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $asset = Asset::first();
+        $asset = Asset::latest()->first();
         $this->assertNotNull($asset);
         $this->assertNull($asset->purchaseItem->unit_price);
     }
@@ -143,7 +143,7 @@ class BusinessRuleFinalTest extends TestCase
                 ]
             ])
             ->call('create')
-            ->assertHasFormErrors(['data.purchase_data.unit_price']);
+            ->assertHasFormErrors(['purchase_data.unit_price']);
     }
 
     public function test_create_aset_1000000_passes()
@@ -202,7 +202,7 @@ class BusinessRuleFinalTest extends TestCase
                 ]
             ])
             ->call('create')
-            ->assertHasFormErrors(['data.purchase_data.unit_price']);
+            ->assertHasFormErrors(['purchase_data.unit_price']);
     }
 
     public function test_update_aset_null_to_1000000_passes_and_immutable()
@@ -225,14 +225,16 @@ class BusinessRuleFinalTest extends TestCase
             'campus_id' => $this->campus->id,
             'location_id' => $this->location->id,
             'status' => 'stock',
+            'kondisi' => 'good',
             'inventory_number' => 'INV-G',
             'ownership' => 'company'
         ]);
 
-        Livewire::test(EditAsset::class, ['record' => $asset->id])
+        Livewire::test(EditAsset::class, ['record' => $asset->getRouteKey()])
             ->fillForm([
                 'purchase_data' => [
-                    'unit_price' => 1000000
+                    'unit_price' => 1000000,
+                    'ownership' => 'company'
                 ]
             ])
             ->call('save')
@@ -241,7 +243,7 @@ class BusinessRuleFinalTest extends TestCase
         $this->assertEquals(1000000, $item->fresh()->unit_price);
         
         // Attempt to update it again to 1500000
-        Livewire::test(EditAsset::class, ['record' => $asset->id])
+        Livewire::test(EditAsset::class, ['record' => $asset->getRouteKey()])
             ->fillForm([
                 'purchase_data' => [
                     'unit_price' => 1500000
@@ -268,7 +270,8 @@ class BusinessRuleFinalTest extends TestCase
             'campus_id' => $this->campus->id,
             'location_id' => $this->location->id,
             'status' => 'stock',
-            'inventory_number' => 'INV-001',
+            'kondisi' => 'good',
+            'inventory_number' => 'INV-0099',
             'category_id' => $this->category->id,
             'ownership' => 'company',
         ]);
@@ -291,7 +294,8 @@ class BusinessRuleFinalTest extends TestCase
             'campus_id' => $this->campus->id,
             'location_id' => $this->location->id,
             'status' => 'stock',
-            'inventory_number' => 'INV-002',
+            'kondisi' => 'good',
+            'inventory_number' => 'INV-0098',
             'category_id' => $this->category->id,
             'ownership' => 'company',
         ]);

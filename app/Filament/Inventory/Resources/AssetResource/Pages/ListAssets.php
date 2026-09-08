@@ -163,7 +163,7 @@ class ListAssets extends ListRecords
                         ->maxSize(10240)
                         ->helperText('Maks. 10MB. Format: CSV, XLSX, XLS.'),
                 ])
-                ->action(function (array $data) {
+                ->action(function (array $data, \Livewire\Component $livewire) {
                     // Prevent timeout for large files (PhpSpreadsheet is slow)
                     set_time_limit(300);
 
@@ -283,6 +283,8 @@ class ListAssets extends ListRecords
                             ->body("{$count} data asset berhasil ditambahkan.")
                             ->success()
                             ->send();
+                            
+                        $livewire->js('window.location.reload()');
                     } catch (\Throwable $e) {
                         Log::error('Asset import transaction failed', ['error' => $e->getMessage()]);
                         
@@ -292,7 +294,7 @@ class ListAssets extends ListRecords
 
                         Notification::make()
                             ->title('Import gagal')
-                            ->body('Terjadi kesalahan saat menyimpan data.')
+                            ->body('Terjadi kesalahan sistem: ' . $e->getMessage())
                             ->danger()
                             ->persistent()
                             ->send();

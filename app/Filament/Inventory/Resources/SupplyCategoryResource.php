@@ -5,14 +5,14 @@ namespace App\Filament\Inventory\Resources;
 use App\Filament\Inventory\Resources\SupplyCategoryResource\Pages;
 
 /**
- * Menampilkan daftar barang berkategori "Persediaan" (type = supply).
+ * Menampilkan daftar barang berkategori "Barang Habis Pakai" (type = supply).
  */
 class SupplyCategoryResource extends BaseCategoryAssetResource
 {
     protected static bool $shouldRegisterNavigation = false;
     protected static string $categoryType = 'supply';
 
-    protected static ?string $slug = 'kategori-persediaan';
+    protected static ?string $slug = 'kategori-barang-habis-pakai';
 
     public static function getNavigationIcon(): string|\Illuminate\Contracts\Support\Htmlable|null
     {
@@ -21,17 +21,17 @@ class SupplyCategoryResource extends BaseCategoryAssetResource
 
     public static function getModelLabel(): string
     {
-        return 'Persediaan';
+        return 'Barang Habis Pakai';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Persediaan';
+        return 'Barang Habis Pakai';
     }
 
     public static function getNavigationLabel(): string
     {
-        return 'Persediaan';
+        return 'Barang Habis Pakai';
     }
 
     public static function getPages(): array

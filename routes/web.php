@@ -10,6 +10,15 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AssetImportTemplateController;
 
 Route::get('/', function () {
+    if (Auth::check()) {
+        $user = Auth::user();
+        if ($user->hasRole('Superadmin') || $user->hasPermissionTo('panel.admin')) {
+            return redirect('admin');
+        } elseif ($user->hasPermissionTo('panel.inventory')) {
+            return redirect('inventory');
+        }
+    }
+    
     return redirect('admin');
 });
 

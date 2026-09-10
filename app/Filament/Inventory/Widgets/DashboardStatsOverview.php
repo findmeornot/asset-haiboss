@@ -17,22 +17,34 @@ class DashboardStatsOverview extends StatsOverviewWidget
             Stat::make('Total Barang / Aset', Asset::count())
                 ->description('Semua barang terdaftar')
                 ->descriptionIcon('heroicon-m-cube')
-                ->color('primary'),
+                ->color('primary')
+                ->extraAttributes([
+                    'class' => 'stat-primary',
+                ]),
 
             Stat::make('Mutasi Menunggu Persetujuan', AssetMovement::where('status', 'pending')->count())
                 ->description('Perlu ditindaklanjuti')
                 ->descriptionIcon('heroicon-m-arrow-path')
-                ->color('warning'),
+                ->color('warning')
+                ->extraAttributes([
+                    'class' => 'stat-warning',
+                ]),
 
             Stat::make('Stock Opname Berjalan', StockOpname::where('status', 'in_progress')->count())
                 ->description('Sesi opname aktif')
                 ->descriptionIcon('heroicon-m-clipboard-document-check')
-                ->color('info'),
+                ->color('info')
+                ->extraAttributes([
+                    'class' => 'stat-info',
+                ]),
 
             Stat::make('Total Lokasi', Location::count())
                 ->description('Lokasi penyimpanan aset')
                 ->descriptionIcon('heroicon-m-map-pin')
-                ->color('success'),
+                ->color('success')
+                ->extraAttributes([
+                    'class' => 'stat-success',
+                ]),
         ];
     }
 }

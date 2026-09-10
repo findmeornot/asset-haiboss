@@ -2,15 +2,20 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\CustomRequestPasswordReset;
+use App\Filament\Pages\Auth\EditProfile;
+use App\Filament\Pages\Auth\Login;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -25,13 +30,13 @@ class InventoryPanelProvider extends PanelProvider
         return $panel
             ->id('inventory')
             ->path('inventory')
-            ->login(\App\Filament\Pages\Auth\Login::class)
-            ->passwordReset(\App\Filament\Pages\Auth\CustomRequestPasswordReset::class)
-            ->profile(\App\Filament\Pages\Auth\EditProfile::class)
+            ->login(Login::class)
+            ->passwordReset(CustomRequestPasswordReset::class)
+            ->profile(EditProfile::class)
             ->userMenuItems([
-                'profile' => \Filament\Navigation\MenuItem::make()
+                'profile' => MenuItem::make()
                     ->label(fn () => auth()->user()?->name ?? 'Profile')
-                    ->url(fn (): string => \App\Filament\Pages\Auth\EditProfile::getUrl())
+                    ->url(fn (): string => EditProfile::getUrl())
                     ->icon('heroicon-o-user-circle')
                     ->sort(-100),
             ])
@@ -52,15 +57,19 @@ class InventoryPanelProvider extends PanelProvider
             ])
             ->maxContentWidth(Width::Full)
             ->renderHook(
-                \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
                 fn () => view('filament.components.header-tools')
             )
             ->renderHook(
-                \Filament\View\PanelsRenderHook::SIDEBAR_NAV_START,
+                PanelsRenderHook::CONTENT_START,
+                fn () => view('filament.components.custom-stats-css')
+            )
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_NAV_START,
                 fn () => view('filament.components.sidebar-header-subtitle')
             )
             ->renderHook(
-                \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
+                PanelsRenderHook::SIDEBAR_FOOTER,
                 fn () => view('filament.components.sidebar-footer-user')
             )
             ->viteTheme('resources/css/filament/inventory/theme.css')

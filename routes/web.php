@@ -1,13 +1,13 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
+use App\Http\Controllers\AssetImportTemplateController;
+use App\Http\Controllers\BulkPrintController;
+use App\Http\Controllers\ReportController;
 use App\Models\Asset;
 use App\Models\AssetMovement;
 use App\Services\BeritaAcaraService;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\AssetImportTemplateController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -18,22 +18,24 @@ Route::get('/', function () {
             return redirect('inventory');
         }
     }
-    
+
     return redirect('admin');
 });
 
 Route::get('/asset/{asset}/print-label', function (Asset $asset) {
     abort_unless(Auth::check(), 403);
+
     return view('asset-label-print', compact('asset'));
 })->name('asset.label.print')->middleware('auth');
 
-Route::get('/asset/bulk-print', [App\Http\Controllers\BulkPrintController::class, 'print'])
+Route::get('/asset/bulk-print', [BulkPrintController::class, 'print'])
     ->name('asset.bulk.print')
     ->middleware('auth');
 
 Route::get('/movement/{movement}/berita-acara', function (AssetMovement $movement, BeritaAcaraService $baService) {
     abort_unless(Auth::check(), 403);
     abort_unless($movement->status === 'completed', 404, 'Mutasi belum selesai.');
+
     return $baService->generateForMovement($movement);
 })->name('asset.movement.ba')->middleware('auth');
 

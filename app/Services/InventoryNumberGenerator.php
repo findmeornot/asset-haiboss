@@ -19,7 +19,7 @@ class InventoryNumberGenerator
             $classCode = self::getClassCode($classification ? $classification->name : 'NOCLASS');
             $catCode   = self::getCatCode($category ? $category->name : 'NOCAT');
 
-            $prefix = "INV/{$classCode}/{$catCode}";
+            $prefix = "{$classCode}/{$catCode}";
 
             // Use upsert to handle concurrent first inserts safely
             DB::table('inventory_number_sequences')->upsert(
@@ -31,7 +31,7 @@ class InventoryNumberGenerator
                 ],
                 ['name'],
                 // Do not update current_value if it exists, just update updated_at
-                ['updated_at'] 
+                ['updated_at']
             );
 
             // Now row is guaranteed to exist, lock it
@@ -41,7 +41,7 @@ class InventoryNumberGenerator
                 ->first();
 
             $sequence = $seqRow->current_value + 1;
-            
+
             // Just in case it's 1 and there are legacy items not tracked in sequence table
             if ($sequence === 1) {
                 $latestAsset = Asset::where('inventory_number', 'like', "{$prefix}/%")
@@ -61,7 +61,7 @@ class InventoryNumberGenerator
                 ->where('name', $prefix)
                 ->update(['current_value' => $sequence]);
 
-            $inventoryNumber = sprintf('%s/%04d', $prefix, $sequence);
+            $inventoryNumber = sprintf('%s/%07d', $prefix, $sequence);
 
             // Ensure uniqueness
             while (Asset::where('inventory_number', $inventoryNumber)->exists()) {
@@ -69,17 +69,13 @@ class InventoryNumberGenerator
                 DB::table('inventory_number_sequences')
                     ->where('name', $prefix)
                     ->update(['current_value' => $sequence]);
-                $inventoryNumber = sprintf('%s/%04d', $prefix, $sequence);
+                $inventoryNumber = sprintf('%s/%07d', $prefix, $sequence);
             }
 
             return $inventoryNumber;
         });
     }
 
-    /**
-     * Kode singkat untuk Kategori Akuntansi (classification).
-     * Tidak boleh sama dengan prefix 'INV' agar tidak double.
-     */
     /**
      * Generate an array of unique inventory numbers in bulk for performance.
      */
@@ -90,7 +86,7 @@ class InventoryNumberGenerator
         return DB::transaction(function () use ($classification, $category, $qty) {
             $classCode = self::getClassCode($classification ? $classification->name : 'NOCLASS');
             $catCode   = self::getCatCode($category ? $category->name : 'NOCAT');
-            $prefix = "INV/{$classCode}/{$catCode}";
+            $prefix = "{$classCode}/{$catCode}";
 
             DB::table('inventory_number_sequences')->upsert(
                 ['name' => $prefix, 'current_value' => 0, 'created_at' => now(), 'updated_at' => now()],
@@ -122,7 +118,7 @@ class InventoryNumberGenerator
 
             $generated = [];
             while (count($generated) < $qty) {
-                $candidate = sprintf('%s/%04d', $prefix, $sequence);
+                $candidate = sprintf('%s/%07d', $prefix, $sequence);
                 if (!isset($existingNumbers[$candidate])) {
                     $generated[] = $candidate;
                 }
@@ -137,12 +133,15 @@ class InventoryNumberGenerator
             return $generated;
         });
     }
+    /**
+     * Kode singkat untuk Kategori Akuntansi (classification).
+     */
     private static function getClassCode(string $name): string
     {
         $name = strtoupper(trim($name));
         $map = [
             'ASET'             => 'AST',
-            'INVENTARIS'       => 'IVT',   // bukan INV agar tidak bentrok dengan prefix
+            'INVENTARIS'       => 'INV',
             'BARANG HABIS PAKAI'=> 'BHP',
         ];
 

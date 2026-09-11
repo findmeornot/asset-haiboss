@@ -5,71 +5,112 @@
     <title>Bulk Print Barcode & Checklist - {{ $location->name }}</title>
     <style>
         @page {
-            margin: 1cm;
+            size: A3 portrait;
+            margin: 10mm;
         }
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            font-size: 12px; 
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 12px;
             color: #000;
         }
         .page-break { page-break-before: always; }
-        
+
         /* Barcode Grid */
         .labels-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, 50mm);
+            gap: 2mm;
+            justify-content: center;
         }
         .label-card {
+            width: 50mm;
+            height: 25mm;
             border: 1px solid #000;
-            padding: 10px;
             box-sizing: border-box;
-            border-radius: 4px;
             page-break-inside: avoid;
             background: #fff;
+            position: relative;
+            overflow: hidden;
+            padding: 1mm;
+            display: flex;
+            flex-direction: column;
         }
-        .label-header {
-            text-align: center;
+        .watermark-left, .watermark-right {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            font-size: 4.5pt;
             font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 4px;
+            color: #777;
+            opacity: 0.35;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            white-space: nowrap;
+        }
+        .watermark-left {
+            left: 1mm;
+            writing-mode: vertical-lr;
+            transform: rotate(180deg);
+        }
+        .watermark-right {
+            right: 1mm;
+            writing-mode: vertical-rl;
+        }
+        .label-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            justify-content: space-between;
+            padding: 0 4mm; /* Space for sideways watermark */
+            box-sizing: border-box;
+        }
+        .label-location {
+            font-size: 5.5pt;
+            font-weight: bold;
+            text-align: center;
+            height: 4mm;
+            line-height: 4mm;
+            text-transform: uppercase;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .label-barcode-img {
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        .label-barcode-img img, .label-barcode-img svg {
-            max-width: 100%;
-            height: 40px;
-        }
-        .label-barcode-number {
-            text-align: center;
-            font-family: monospace;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .label-details {
-            font-size: 11px;
-            line-height: 1.4;
-        }
-        .label-row {
+            flex-grow: 1;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            overflow: hidden;
+            padding: 0.5mm 1mm; /* extra space left and right */
         }
-        .label-label {
-            width: 40px;
+        .label-barcode-img svg, .label-barcode-img img {
+            height: 100%;
+            max-height: 10mm;
+            width: auto;
+            max-width: 100%;
+        }
+        .label-sku {
+            height: 4.5mm;
+            line-height: 4.5mm;
+            background: #000;
+            color: #fff;
             font-weight: bold;
-            flex-shrink: 0;
+            text-align: center;
+            font-size: 6.5pt;
+            letter-spacing: 0.5px;
+            box-sizing: border-box;
+            border-radius: 1px;
+            overflow: hidden;
         }
-        .label-value {
-            flex: 1;
-            word-break: break-word;
-        }
-        
+
         /* Checklist Table */
         table {
             width: 100%;
@@ -97,56 +138,52 @@
         .text-center { text-align: center; }
         h2 { text-align: center; margin-bottom: 15px; font-size: 18px; }
         p.subtitle { text-align: center; margin-top: -10px; margin-bottom: 20px; font-size: 14px; }
-        
+
         @media print {
             .no-print { display: none; }
             body { padding: 0; }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
         }
     </style>
 </head>
 <body onload="window.print()">
     <!-- Document 1: Barcode Labels -->
     <div class="labels-section">
-        <h2>Label Barcode - Ruangan: {{ $location->name }}</h2>
-        <p class="subtitle">{{ $location->campus->name }}</p>
-        
+        <h2 class="no-print">Label Barcode - Ruangan: {{ $location->name }}</h2>
+        <p class="subtitle no-print">{{ $location->campus->name }}</p>
+
         <div class="labels-grid">
             @php
                 $barcodeGenerator = new \Picqer\Barcode\BarcodeGeneratorSVG();
             @endphp
             @foreach($assets as $asset)
             <div class="label-card">
-                <div class="label-header">HAIBOSS</div>
-                
-                <div class="label-barcode-img">
-                    {!! $barcodeGenerator->getBarcode($asset->barcode, $barcodeGenerator::TYPE_CODE_128, 2, 40) !!}
-                </div>
-                <div class="label-barcode-number">{{ $asset->barcode }}</div>
-                
-                <div class="label-details">
-                    <div class="label-row"><span class="label-label">SKU</span> <span class="label-value">: {{ $asset->inventory_number }}</span></div>
-                    <div class="label-row"><span class="label-label">Nama</span> <span class="label-value">: {{ $asset->name }}</span></div>
-                    @if($asset->brand)
-                    <div class="label-row"><span class="label-label">Tipe</span> <span class="label-value">: {{ $asset->brand }}</span></div>
-                    @endif
-                    @if($asset->serial_number)
-                    <div class="label-row"><span class="label-label">SN</span> <span class="label-value">: {{ $asset->serial_number }}</span></div>
-                    @endif
-                    @if($asset->pic)
-                    <div class="label-row"><span class="label-label">PIC</span> <span class="label-value">: {{ $asset->pic->name }}</span></div>
-                    @endif
+                <div class="watermark-left">UNIVERSITAS STEKOM</div>
+                <div class="watermark-right">UNIVERSITAS STEKOM</div>
+                <div class="label-content">
+                    <div class="label-location">
+                        {{ $asset->campus->code ?? $asset->campus->name ?? '' }} - {{ $asset->location->name ?? '' }}
+                    </div>
+                    <div class="label-barcode-img">
+                        {!! $barcodeGenerator->getBarcode($asset->inventory_number, $barcodeGenerator::TYPE_CODE_128, 1, 25) !!}
+                    </div>
+                    <div class="label-sku">{{ $asset->inventory_number }}</div>
                 </div>
             </div>
             @endforeach
         </div>
     </div>
-    
+
     <!-- Document 2: Checklist Barang -->
     <div class="page-break"></div>
     <div class="checklist-section">
         <h2>Checklist Barang - Ruangan: {{ $location->name }}</h2>
         <p class="subtitle">{{ $location->campus->name }} &bull; Total: {{ $assets->count() }} barang</p>
-        
+
         <table>
             <thead>
                 <tr>

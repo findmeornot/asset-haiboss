@@ -20,14 +20,7 @@ class AssetObserver
 
     public function updating(Asset $asset): void
     {
-        if ($asset->isDirty('classification_id') || $asset->isDirty('category_id')) {
-            $classification = \App\Models\Classification::find($asset->classification_id);
-            $category = \App\Models\Category::find($asset->category_id);
-            
-            if ($classification && $category) {
-                $asset->inventory_number = \App\Services\InventoryNumberGenerator::generate($classification, $category);
-            }
-        }
+        // SKU / Kode Barang is now immutable and does not change when category/classification changes.
     }
 
     public function created(Asset $asset): void

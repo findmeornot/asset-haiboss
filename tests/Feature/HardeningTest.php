@@ -24,7 +24,7 @@ class HardeningTest extends TestCase
         parent::setUp();
         // Seed initial sequences for the test
         DB::table('inventory_number_sequences')->updateOrInsert(
-            ['name' => 'asset_inventory'],
+            ['name' => 'INV'],
             [
                 'current_value' => 0,
                 'created_at' => now(),
@@ -40,8 +40,8 @@ class HardeningTest extends TestCase
         $num2 = InventoryNumberGenerator::generate();
 
         $this->assertNotEquals($num1, $num2);
-        $this->assertEquals('INV/NCL/NCT/0001', $num1);
-        $this->assertEquals('INV/NCL/NCT/0002', $num2);
+        $this->assertEquals('INV0000001', $num1);
+        $this->assertEquals('INV0000002', $num2);
     }
 
     public function test_duplicate_pending_approval_prevention()

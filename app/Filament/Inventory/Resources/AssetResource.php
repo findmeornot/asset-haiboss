@@ -374,7 +374,7 @@ class AssetResource extends Resource
                     ->visible(fn (callable $get) => filled($get('classification_id')) && $isAset($get)),
 
                 \Filament\Schemas\Components\Group::make()->schema([
-                    Components\TextInput::make('inventory_number')->label('SKU / Kode')->disabled()->visibleOn(['edit', 'view']),
+                    Components\TextInput::make('inventory_number')->label('Kode Barang')->disabled()->visibleOn(['edit', 'view']),
                     Components\TextInput::make('barcode')->label('Barcode Number')->disabled()->visibleOn(['edit', 'view']),
                 ])->visible(fn ($record) => $record !== null),
             ])->columns(1);
@@ -389,7 +389,7 @@ class AssetResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('inventory_number')
-                    ->label('SKU')
+                    ->label('Kode Barang')
                     ->toggleable()
                     ->searchable()
                     ->sortable(),

@@ -4,27 +4,22 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\Asset;
-use App\Models\Classification;
-use App\Models\Category;
 
 class InventoryNumberGenerator
 {
+    private const PREFIX = 'INV';
+
     /**
-     * Generate a unique inventory number for a new asset (e.g. INV/AST/ELK/0001).
+     * Generate a unique inventory number for a new asset (e.g. INV0000001).
+     * Now acts as a permanent unique Kode Barang, independent of category.
      */
-    public static function generate(?Classification $classification = null, ?Category $category = null): string
+    public static function generate(): string
     {
-        return DB::transaction(function () use ($classification, $category) {
-
-            $classCode = self::getClassCode($classification ? $classification->name : 'NOCLASS');
-            $catCode   = self::getCatCode($category ? $category->name : 'NOCAT');
-
-            $prefix = "{$classCode}/{$catCode}";
-
+        return DB::transaction(function () {
             // Use upsert to handle concurrent first inserts safely
             DB::table('inventory_number_sequences')->upsert(
                 [
-                    'name' => $prefix,
+                    'name' => self::PREFIX,
                     'current_value' => 0,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -36,7 +31,7 @@ class InventoryNumberGenerator
 
             // Now row is guaranteed to exist, lock it
             $seqRow = DB::table('inventory_number_sequences')
-                ->where('name', $prefix)
+                ->where('name', self::PREFIX)
                 ->lockForUpdate()
                 ->first();
 
@@ -44,13 +39,13 @@ class InventoryNumberGenerator
 
             // Just in case it's 1 and there are legacy items not tracked in sequence table
             if ($sequence === 1) {
-                $latestAsset = Asset::where('inventory_number', 'like', "{$prefix}/%")
-                                    ->orderByRaw('LENGTH(inventory_number) DESC')
-                                    ->orderBy('inventory_number', 'desc')
+                // Find the latest asset that matches the INV[0-9]{7} format, including soft deleted ones
+                $latestAsset = Asset::withTrashed()
+                                    ->whereRaw('inventory_number REGEXP "^' . self::PREFIX . '[0-9]+$"')
+                                    ->orderByRaw('CAST(SUBSTRING(inventory_number, ' . (strlen(self::PREFIX) + 1) . ') AS UNSIGNED) DESC')
                                     ->first();
                 if ($latestAsset) {
-                    $parts = explode('/', $latestAsset->inventory_number);
-                    $lastPart = end($parts);
+                    $lastPart = substr($latestAsset->inventory_number, strlen(self::PREFIX));
                     if (is_numeric($lastPart)) {
                         $sequence = (int) $lastPart + 1;
                     }
@@ -58,18 +53,18 @@ class InventoryNumberGenerator
             }
 
             DB::table('inventory_number_sequences')
-                ->where('name', $prefix)
+                ->where('name', self::PREFIX)
                 ->update(['current_value' => $sequence]);
 
-            $inventoryNumber = sprintf('%s/%07d', $prefix, $sequence);
+            $inventoryNumber = sprintf('%s%07d', self::PREFIX, $sequence);
 
-            // Ensure uniqueness
-            while (Asset::where('inventory_number', $inventoryNumber)->exists()) {
+            // Ensure uniqueness considering soft deleted records as well
+            while (Asset::withTrashed()->where('inventory_number', $inventoryNumber)->exists()) {
                 $sequence++;
                 DB::table('inventory_number_sequences')
-                    ->where('name', $prefix)
+                    ->where('name', self::PREFIX)
                     ->update(['current_value' => $sequence]);
-                $inventoryNumber = sprintf('%s/%07d', $prefix, $sequence);
+                $inventoryNumber = sprintf('%s%07d', self::PREFIX, $sequence);
             }
 
             return $inventoryNumber;
@@ -79,31 +74,26 @@ class InventoryNumberGenerator
     /**
      * Generate an array of unique inventory numbers in bulk for performance.
      */
-    public static function generateBulk(?Classification $classification = null, ?Category $category = null, int $qty = 1): array
+    public static function generateBulk(int $qty = 1): array
     {
         if ($qty <= 0) return [];
 
-        return DB::transaction(function () use ($classification, $category, $qty) {
-            $classCode = self::getClassCode($classification ? $classification->name : 'NOCLASS');
-            $catCode   = self::getCatCode($category ? $category->name : 'NOCAT');
-            $prefix = "{$classCode}/{$catCode}";
-
+        return DB::transaction(function () use ($qty) {
             DB::table('inventory_number_sequences')->upsert(
-                ['name' => $prefix, 'current_value' => 0, 'created_at' => now(), 'updated_at' => now()],
+                ['name' => self::PREFIX, 'current_value' => 0, 'created_at' => now(), 'updated_at' => now()],
                 ['name'], ['updated_at']
             );
 
-            $seqRow = DB::table('inventory_number_sequences')->where('name', $prefix)->lockForUpdate()->first();
+            $seqRow = DB::table('inventory_number_sequences')->where('name', self::PREFIX)->lockForUpdate()->first();
             $sequence = $seqRow->current_value + 1;
 
             if ($sequence === 1) {
-                $latestAsset = Asset::where('inventory_number', 'like', "{$prefix}/%")
-                                    ->orderByRaw('LENGTH(inventory_number) DESC')
-                                    ->orderBy('inventory_number', 'desc')
+                $latestAsset = Asset::withTrashed()
+                                    ->whereRaw('inventory_number REGEXP "^' . self::PREFIX . '[0-9]+$"')
+                                    ->orderByRaw('CAST(SUBSTRING(inventory_number, ' . (strlen(self::PREFIX) + 1) . ') AS UNSIGNED) DESC')
                                     ->first();
                 if ($latestAsset) {
-                    $parts = explode('/', $latestAsset->inventory_number);
-                    $lastPart = end($parts);
+                    $lastPart = substr($latestAsset->inventory_number, strlen(self::PREFIX));
                     if (is_numeric($lastPart)) {
                         $sequence = (int) $lastPart + 1;
                     }
@@ -111,14 +101,16 @@ class InventoryNumberGenerator
             }
 
             // Fetch all existing sequences for this prefix to avoid hitting DB in a loop
-            $existingNumbers = Asset::where('inventory_number', 'like', "{$prefix}/%")
+            // Make sure to include soft deleted assets!
+            $existingNumbers = Asset::withTrashed()
+                                    ->where('inventory_number', 'like', self::PREFIX . "%")
                                     ->pluck('inventory_number')
                                     ->flip()
                                     ->toArray();
 
             $generated = [];
             while (count($generated) < $qty) {
-                $candidate = sprintf('%s/%07d', $prefix, $sequence);
+                $candidate = sprintf('%s%07d', self::PREFIX, $sequence);
                 if (!isset($existingNumbers[$candidate])) {
                     $generated[] = $candidate;
                 }
@@ -127,68 +119,10 @@ class InventoryNumberGenerator
 
             // Update sequence table to the last checked sequence
             DB::table('inventory_number_sequences')
-                ->where('name', $prefix)
+                ->where('name', self::PREFIX)
                 ->update(['current_value' => $sequence - 1]);
 
             return $generated;
         });
-    }
-    /**
-     * Kode singkat untuk Kategori Akuntansi (classification).
-     */
-    private static function getClassCode(string $name): string
-    {
-        $name = strtoupper(trim($name));
-        $map = [
-            'ASET'             => 'AST',
-            'INVENTARIS'       => 'INV',
-            'BARANG HABIS PAKAI'=> 'BHP',
-        ];
-
-        if (isset($map[$name])) {
-            return $map[$name];
-        }
-
-        // Auto-generate: 3 huruf pertama konsonan
-        return self::makeInitial($name);
-    }
-
-    /**
-     * Kode singkat untuk Kategori (category).
-     */
-    private static function getCatCode(string $name): string
-    {
-        $name = strtoupper(trim($name));
-        $map = [
-            'ELEKTRONIK'       => 'ELK',
-            'ELEKTRONIK LAINNYA' => 'ELL',
-            'MESIN'            => 'MSN',
-            'FURNITURE'        => 'FNR',
-            'KENDARAAN'        => 'KND',
-            'ATK'              => 'ATK',
-            'DEKORASI'         => 'DKR',
-            'JARINGAN'         => 'JRN',
-            'MAINAN'           => 'MNN',
-            'MAKANAN'          => 'MKN',
-            'SOUVENIR'         => 'SVN',
-        ];
-
-        if (isset($map[$name])) {
-            return $map[$name];
-        }
-
-        return self::makeInitial($name);
-    }
-
-    /**
-     * Auto-generate 3-letter initial: huruf pertama + 2 konsonan berikutnya.
-     */
-    private static function makeInitial(string $name): string
-    {
-        $name  = strtoupper(trim($name));
-        $first = substr($name, 0, 1);
-        $rest  = preg_replace('/[AEIOU\s\W]/', '', substr($name, 1));
-
-        return str_pad(substr($first . $rest, 0, 3), 3, 'X');
     }
 }

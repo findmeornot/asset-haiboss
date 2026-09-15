@@ -186,8 +186,8 @@ class CreateAsset extends CreateRecord
 
             // 3. Create N individual Asset records (1 record = 1 physical unit)
             for ($i = 0; $i < $quantity; $i++) {
-                // Each unit gets its own unique inventory_number (SKU)
-                $inventoryNumber = \App\Services\InventoryNumberGenerator::generate($classification, $category);
+                // Each unit gets its own unique inventory_number (Kode Barang)
+                $inventoryNumber = \App\Services\InventoryNumberGenerator::generate();
 
                 $assetData                     = $data;
                 $assetData['inventory_number'] = $inventoryNumber;

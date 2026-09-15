@@ -57,7 +57,7 @@ abstract class BaseCategoryAssetResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('inventory_number')
-                    ->label('No. Inventaris')
+                    ->label('Kode Barang')
                     ->toggleable()
                     ->searchable()
                     ->sortable(),

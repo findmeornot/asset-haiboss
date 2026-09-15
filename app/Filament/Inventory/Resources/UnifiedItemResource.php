@@ -50,7 +50,7 @@ class UnifiedItemResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('sku')
-                    ->label('SKU')
+                    ->label('Kode Barang')
                     ->toggleable()
                     ->searchable()
                     ->sortable(),

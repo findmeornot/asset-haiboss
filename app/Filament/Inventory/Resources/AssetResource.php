@@ -431,6 +431,7 @@ class AssetResource extends Resource
                         'disposed'                 => 'Dihapuskan / Musnah',
                         'administratively_deleted' => 'Pghps. Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                        'baru_dilaporkan'          => 'Baru Dilaporkan',
                         default                    => $state,
                     }),
                 Tables\Columns\TextColumn::make('kondisi')
@@ -539,6 +540,7 @@ class AssetResource extends Resource
                         'disposed'                 => 'Dihapuskan / Musnah',
                         'administratively_deleted' => 'Penghapusan Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                        'baru_dilaporkan'          => 'Baru Dilaporkan',
                     ]),
                 Tables\Filters\SelectFilter::make('kondisi')
                     ->label('Kondisi')

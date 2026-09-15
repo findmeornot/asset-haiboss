@@ -1,0 +1,6 @@
+.fi-sidebar-header {
+    justify-content: space-between;
+}
+.fi-sidebar-header-logo-ctn {
+    order: -1;
+}

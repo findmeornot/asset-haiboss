@@ -47,11 +47,11 @@ class InventoryPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->databaseNotifications()
-            ->sidebarWidth('15rem')
+            ->sidebarWidth('17rem')
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 'Asset Management',
-                'PENGELOLAAN BARANG',
+                'Pengelolaan Barang',
                 'Transaksi',
                 'Reports',
             ])
@@ -67,10 +67,6 @@ class InventoryPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_NAV_START,
                 fn () => view('filament.components.sidebar-header-subtitle')
-            )
-            ->renderHook(
-                PanelsRenderHook::SIDEBAR_FOOTER,
-                fn () => view('filament.components.sidebar-footer-user')
             )
             ->viteTheme('resources/css/filament/inventory/theme.css')
             ->discoverResources(in: app_path('Filament/Inventory/Resources'), for: 'App\Filament\Inventory\Resources')
@@ -90,6 +86,10 @@ class InventoryPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
+                fn () => view('filament.components.floating-collapse-btn')
+            )
             ->authMiddleware([
                 Authenticate::class,
             ]);

@@ -22,7 +22,7 @@ class UnifiedItemResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'PENGELOLAAN BARANG';
+        return 'Pengelolaan Barang';
     }
 
     public static function getModelLabel(): string
@@ -102,6 +102,7 @@ class UnifiedItemResource extends Resource
                         'disposed'                 => 'Dihapuskan / Musnah',
                         'administratively_deleted' => 'Penghapusan Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                        'baru_dilaporkan'          => 'Baru Dilaporkan',
                         default                    => $state ?? '-',
                     })
                     ->color(fn (?string $state): string => match ($state) {
@@ -150,6 +151,7 @@ class UnifiedItemResource extends Resource
                         'disposed'                 => 'Dihapuskan / Musnah',
                         'administratively_deleted' => 'Penghapusan Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                        'baru_dilaporkan'          => 'Baru Dilaporkan',
                     ]),
                 Tables\Filters\SelectFilter::make('kondisi')
                     ->label('Kondisi')

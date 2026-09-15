@@ -6,15 +6,15 @@
 @source '../../../../resources/views/filament/**/*';
 @source '../../../../resources/views/vendor/filament-panels/**/*';
 
-/* Sidebar Vertical Border Line on Right */
+/* Sidebar Vertical Border Line on Right and Background */
 aside.fi-sidebar,
 .fi-sidebar {
-    border-right: 1px solid #e5e7eb !important;
+    @apply !border-r !border-gray-200 !bg-white;
 }
 
 :is(.dark aside.fi-sidebar),
 :is(.dark .fi-sidebar) {
-    border-right: 1px solid #1f2937 !important;
+    @apply !border-white/10 !bg-gray-900;
 }
 
 /* Tombol default: ring cuma 10% opacity & icon abu-abu terang -> pudar di bg putih. Perkuat kontrasnya. */
@@ -32,6 +32,23 @@ aside.fi-sidebar,
 
 :is(.dark .fi-btn:not(.fi-outlined):not(.fi-color) > .fi-icon) {
     color: var(--gray-300) !important;
+}
+
+/* Hide topbar bottom border above the sidebar to create a seamless 1-layer look */
+@media (min-width: 1024px) {
+    .fi-sidebar::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: 0;
+        right: 1px; /* Stop exactly before the right border to form a perfect L-shape */
+        height: 3px;
+        background-color: #ffffff;
+        z-index: 50;
+    }
+    :is(.dark .fi-sidebar)::before {
+        background-color: #111827;
+    }
 }
 
 /* Sticky Actions Column on Tables */
@@ -52,4 +69,59 @@ aside.fi-sidebar,
 :is(.dark .fi-ta-table td:last-child) {
     background-color: #090d16 !important;
     box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.3);
+}
+
+/* Custom smooth and small scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+:is(.dark ::-webkit-scrollbar-thumb) {
+    background: #4b5563;
+}
+:is(.dark ::-webkit-scrollbar-thumb:hover) {
+    background: #6b7280;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
+}
+:is(.dark *) {
+    scrollbar-color: #4b5563 transparent;
+}
+
+/* Hide default topbar collapse button entirely as we use custom floating button */
+.fi-topbar-collapse-sidebar-btn-ctn {
+    display: none !important;
+}
+
+/* Stylish Breadcrumbs (Text only, no badge) */
+.fi-breadcrumbs-list {
+    @apply inline-flex items-center px-1 py-1.5;
+}
+
+.fi-breadcrumbs-item:last-child .fi-breadcrumbs-item-label {
+    @apply font-semibold text-primary-600 dark:text-primary-400;
+}
+
+.fi-breadcrumbs-item a {
+    @apply transition-colors duration-200;
+}
+
+.fi-breadcrumbs-item a:hover {
+    @apply text-primary-500 dark:text-primary-300;
+}
+
+.fi-breadcrumbs-item-separator {
+    @apply w-3.5 h-3.5 text-gray-400 mx-0.5 opacity-70;
 }

@@ -27,7 +27,12 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::subscribe(\App\Listeners\AuthEventsSubscriber::class);
         \App\Models\User::observe(\App\Observers\UserObserver::class);
         
-        
+        \Filament\Support\Facades\FilamentIcon::register([
+            'panels::sidebar.collapse-button' => 'heroicon-o-bars-3-bottom-right',
+            'panels::sidebar.collapse-button.rtl' => 'heroicon-o-bars-3-bottom-left',
+            'panels::sidebar.expand-button' => 'heroicon-o-bars-3',
+            'panels::sidebar.expand-button.rtl' => 'heroicon-o-bars-3',
+        ]);
         if (!app()->environment('local')) {
             URL::forceScheme('https');
         }

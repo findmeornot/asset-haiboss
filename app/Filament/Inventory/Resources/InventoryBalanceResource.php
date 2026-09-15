@@ -27,7 +27,7 @@ class InventoryBalanceResource extends Resource
 
     public static function getNavigationGroup(): string | \UnitEnum | null
     {
-        return 'PENGELOLAAN BARANG';
+        return 'Pengelolaan Barang';
     }
 
     public static function getModelLabel(): string

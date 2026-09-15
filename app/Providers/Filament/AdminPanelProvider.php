@@ -50,11 +50,11 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Blue,
             ])
             ->databaseNotifications()
-            ->sidebarWidth('15rem')
+            ->sidebarWidth('17rem')
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 'Asset Management',
-                'PENGELOLAAN BARANG',
+                'Pengelolaan Barang',
                 'Master Data',
                 'Transaksi',
                 'Reports',
@@ -74,10 +74,6 @@ class AdminPanelProvider extends PanelProvider
                 PanelsRenderHook::SIDEBAR_NAV_START,
                 fn () => view('filament.components.sidebar-header-subtitle')
             )
-            ->renderHook(
-                PanelsRenderHook::SIDEBAR_FOOTER,
-                fn () => view('filament.components.sidebar-footer-user')
-            )
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
@@ -92,6 +88,10 @@ class AdminPanelProvider extends PanelProvider
                 AssetStatusChart::class,
                 LatestAssetMovements::class,
             ])
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::SIDEBAR_FOOTER,
+                fn () => view('filament.components.floating-collapse-btn')
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

@@ -25,8 +25,7 @@ class UnifiedItem extends Model
         static::addGlobalScope('unified', function (Builder $builder) {
             $assets = DB::table('assets')
                 ->leftJoin('categories', 'assets.category_id', '=', 'categories.id')
-                ->leftJoin('category_classification', 'categories.id', '=', 'category_classification.category_id')
-                ->leftJoin('classifications', 'category_classification.classification_id', '=', 'classifications.id')
+                ->leftJoin('classifications', 'assets.classification_id', '=', 'classifications.id')
                 ->leftJoin('locations', 'assets.location_id', '=', 'locations.id')
                 ->leftJoin('purchase_items', 'assets.purchase_item_id', '=', 'purchase_items.id')
                 ->whereNull('assets.deleted_at')
@@ -49,10 +48,14 @@ class UnifiedItem extends Model
                     'assets.created_at as created_at'
                 );
 
+            $categoryClassification = DB::table('category_classification')
+                ->select('category_id', DB::raw('MIN(classification_id) as classification_id'))
+                ->groupBy('category_id');
+
             $supplies = DB::table('inventory_balances')
                 ->leftJoin('categories', 'inventory_balances.category_id', '=', 'categories.id')
-                ->leftJoin('category_classification', 'categories.id', '=', 'category_classification.category_id')
-                ->leftJoin('classifications', 'category_classification.classification_id', '=', 'classifications.id')
+                ->leftJoinSub($categoryClassification, 'cc', 'categories.id', '=', 'cc.category_id')
+                ->leftJoin('classifications', 'cc.classification_id', '=', 'classifications.id')
                 ->leftJoin('locations', 'inventory_balances.location_id', '=', 'locations.id')
                 ->select(
                     DB::raw("CONCAT('supply_', inventory_balances.id) as id"),

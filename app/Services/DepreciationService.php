@@ -4,6 +4,10 @@ namespace App\Services;
 
 use App\Models\Asset;
 use Carbon\Carbon;
+use function bccomp;
+use function bcsub;
+use function bcdiv;
+use function bcmul;
 
 class DepreciationService
 {

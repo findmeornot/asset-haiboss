@@ -11,17 +11,30 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Models\Traits\HasRouteUlid;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable(['name', 'email', 'avatar_url', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasAvatar
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRouteUlid;
+    use HasFactory, Notifiable, HasRouteUlid, HasApiTokens;
+
+    /**
+     * Diekspos ke API (mis. GET /profile) supaya frontend tahu role user
+     * yang sebenarnya, bukan label statis.
+     */
+    protected $appends = ['role_name'];
+
+    public function getRoleNameAttribute(): ?string
+    {
+        return $this->roles->pluck('name')->first();
+    }
 
     public function getFilamentAvatarUrl(): ?string
     {
@@ -39,6 +52,14 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Data karyawan (PIC) yang tertaut ke akun ini, kalau ada.
+     */
+    public function employee(): HasOne
+    {
+        return $this->hasOne(Employee::class);
     }
 
     public function roles(): BelongsToMany

@@ -12,6 +12,13 @@ class Asset extends Model {
     use SoftDeletes;
     protected $guarded = [];
 
+    protected function casts(): array
+    {
+        return [
+            'location_confirmed' => 'boolean',
+        ];
+    }
+
     protected static function booted(): void
     {
         static::saving(function (Asset $asset) {
@@ -42,6 +49,10 @@ class Asset extends Model {
                     \Illuminate\Support\Facades\Storage::disk('public')->delete($photo->file_path);
                 }
             }
+
+            if ($asset->foto_resi && \Illuminate\Support\Facades\Storage::disk('public')->exists($asset->foto_resi)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($asset->foto_resi);
+            }
         });
     }
 
@@ -50,6 +61,7 @@ class Asset extends Model {
     public function campus(): BelongsTo { return $this->belongsTo(Campus::class); }
     public function location(): BelongsTo { return $this->belongsTo(Location::class); }
     public function pic(): BelongsTo { return $this->belongsTo(Employee::class, 'pic_id'); }
+    public function reportedBy(): BelongsTo { return $this->belongsTo(User::class, 'reported_by'); }
     public function purchase(): HasOne { return $this->hasOne(AssetPurchase::class); }
     public function financial(): HasOne { return $this->hasOne(AssetFinancial::class); }
     public function documents(): HasMany { return $this->hasMany(AssetDocument::class); }

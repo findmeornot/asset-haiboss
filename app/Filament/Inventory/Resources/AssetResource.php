@@ -408,6 +408,7 @@ class AssetResource extends Resource
                         'sold'                     => 'Terjual',
                         'administratively_deleted' => 'Pghps. Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                        'baru_dilaporkan'          => 'Baru Dilaporkan',
                         default                    => $state,
                     }),
                 Tables\Columns\TextColumn::make('campus.name')
@@ -490,6 +491,7 @@ class AssetResource extends Resource
                         'sold'                     => 'Terjual',
                         'administratively_deleted' => 'Penghapusan Administratif',
                         'destroyed'                => 'Dimusnahkan',
+                        'baru_dilaporkan'          => 'Baru Dilaporkan',
                     ]),
                 Tables\Filters\SelectFilter::make('ownership')
                     ->label('Sumber Dana')

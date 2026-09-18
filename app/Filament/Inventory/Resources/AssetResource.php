@@ -63,6 +63,7 @@ class AssetResource extends Resource
                                     ->disk('s3')
                                     ->directory('foto-resi')
                                     ->image()
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                                     ->imageEditor()
                                     ->openable()
                                     ->downloadable()

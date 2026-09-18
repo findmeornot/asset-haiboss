@@ -95,6 +95,11 @@ class ReportedAssetResource extends Resource
                     ->label('Ruangan (Lokasi)')
                     ->toggleable()
                     ->searchable(),
+                Tables\Columns\IconColumn::make('location_confirmed')
+                    ->label('Lokasi Valid')
+                    ->boolean()
+                    ->toggleable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('reportedBy.name')
                     ->label('Dilaporkan Oleh')
                     ->toggleable()

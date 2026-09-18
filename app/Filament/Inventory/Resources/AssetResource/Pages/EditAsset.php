@@ -54,11 +54,34 @@ class EditAsset extends EditRecord
             $data['purchase_data'] = array_merge($data['purchase_data'], $this->record->purchase->toArray());
         }
 
+        $invoiceDoc = $this->record->documents()->where('type', 'invoice')->first();
+        if ($invoiceDoc) {
+            $data['purchase_data']['invoice_document'] = $invoiceDoc->document_path;
+        }
+
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        if ($this->record->status === 'baru_dilaporkan') {
+            $campusChanged = isset($data['campus_id']) && $data['campus_id'] != $this->record->campus_id;
+            $locationChanged = isset($data['location_id']) && $data['location_id'] != $this->record->location_id;
+            
+            $data['location_confirmed'] = !($campusChanged || $locationChanged);
+
+            if ($campusChanged || $locationChanged) {
+                $locationNotice = 'Admin mengubah lokasi, pelapor wajib memindahkan barang dan report.';
+                $existingNotes = trim($data['notes'] ?? '');
+                
+                if ($existingNotes === '') {
+                    $data['notes'] = $locationNotice;
+                } elseif (!str_contains($existingNotes, $locationNotice)) {
+                    $data['notes'] = $existingNotes . "\n" . $locationNotice;
+                }
+            }
+        }
+
         // Extract purchase data
         if (isset($data['purchase_data'])) {
             $this->purchaseData = $data['purchase_data'];
@@ -142,6 +165,24 @@ class EditAsset extends EditRecord
     protected function afterSave(): void
     {
         if ($this->purchaseData) {
+            if (array_key_exists('invoice_document', $this->purchaseData)) {
+                $invoiceDocument = $this->purchaseData['invoice_document'];
+                $existingDoc = $this->record->documents()->where('type', 'invoice')->first();
+                if ($invoiceDocument) {
+                    $path = is_array($invoiceDocument) ? reset($invoiceDocument) : $invoiceDocument;
+                    if ($existingDoc) {
+                        $existingDoc->update(['document_path' => $path]);
+                    } else {
+                        $this->record->documents()->create([
+                            'type' => 'invoice',
+                            'document_path' => $path,
+                        ]);
+                    }
+                } elseif ($existingDoc) {
+                    $existingDoc->delete();
+                }
+            }
+
             if ($this->record->purchaseItem) {
                 // New Architecture
                 $oldPrice = $this->record->purchaseItem->unit_price;

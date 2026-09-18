@@ -185,6 +185,12 @@ class CreateAsset extends CreateRecord
             $firstAsset = null;
 
             // 3. Create N individual Asset records (1 record = 1 physical unit)
+            $invoiceDocument = $this->purchaseData['invoice_document'] ?? null;
+            $invoicePath = null;
+            if ($invoiceDocument) {
+                $invoicePath = is_array($invoiceDocument) ? reset($invoiceDocument) : $invoiceDocument;
+            }
+
             for ($i = 0; $i < $quantity; $i++) {
                 // Each unit gets its own unique inventory_number (Kode Barang)
                 $inventoryNumber = \App\Services\InventoryNumberGenerator::generate();
@@ -195,6 +201,13 @@ class CreateAsset extends CreateRecord
                 // Barcode is generated automatically by AssetObserver::creating()
 
                 $asset = static::getModel()::create($assetData);
+                
+                if ($invoicePath) {
+                    $asset->documents()->create([
+                        'type' => 'invoice',
+                        'document_path' => $invoicePath,
+                    ]);
+                }
 
                 if ($i === 0) {
                     $firstAsset = $asset;

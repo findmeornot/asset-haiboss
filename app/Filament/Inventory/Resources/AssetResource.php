@@ -53,6 +53,51 @@ class AssetResource extends Resource
 
         return $schema
             ->components([
+                \Filament\Schemas\Components\Section::make('Info Laporan')
+                    ->description('Detail laporan barang datang dari lapangan, buat bantu tentukan klasifikasi.')
+                    ->schema([
+                        \Filament\Schemas\Components\Grid::make(4)
+                            ->schema([
+                                Components\Placeholder::make('foto_resi_preview')
+                                    ->hiddenLabel()
+                                    ->content(function ($record) {
+                                        if (! $record->foto_resi) {
+                                            return '-';
+                                        }
+
+                                        $url = e(\Illuminate\Support\Facades\Storage::disk('public')->url($record->foto_resi));
+
+                                        return new \Illuminate\Support\HtmlString(<<<HTML
+                                            <div x-data="{ open: false }">
+                                                <img src="{$url}" @click="open = true"
+                                                    style="width:6rem;height:6rem;object-fit:cover;border-radius:0.5rem;cursor:zoom-in;" />
+                                                <div x-show="open" x-cloak @click="open = false"
+                                                    style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:2rem;">
+                                                    <img src="{$url}" @click.stop
+                                                        style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:0.5rem;" />
+                                                </div>
+                                            </div>
+                                            HTML);
+                                    })
+                                    ->columnSpan(1),
+                                \Filament\Schemas\Components\Group::make()
+                                    ->schema([
+                                        Components\Placeholder::make('keterangan_preview')
+                                            ->label('Keterangan')
+                                            ->content(fn ($record) => $record->keterangan ?: '-'),
+                                        Components\Placeholder::make('reported_by_preview')
+                                            ->label('Dilaporkan Oleh')
+                                            ->content(fn ($record) => $record->reportedBy?->name ?? '-'),
+                                        Components\Placeholder::make('reported_at_preview')
+                                            ->label('Dilaporkan Pada')
+                                            ->content(fn ($record) => $record->created_at?->format('d M Y H:i') ?? '-'),
+                                    ])
+                                    ->columns(3)
+                                    ->columnSpan(3),
+                            ]),
+                    ])
+                    ->visible(fn ($record) => $record !== null && filled($record->reported_by)),
+
                 \Filament\Schemas\Components\Section::make('Klasifikasi Barang')
                     ->description('Pilih klasifikasi barang terlebih dahulu untuk menyesuaikan formulir.')
                     ->schema([
@@ -63,7 +108,7 @@ class AssetResource extends Resource
                             ->required()
                             ->live()
                             ->afterStateUpdated(fn (callable $set) => $set('category_id', null))
-                            ->disabled(fn ($record) => $record !== null),
+                            ->disabled(fn ($record) => $record !== null && $record->classification_id !== null),
                     ]),
 
                 \Filament\Schemas\Components\Section::make('Identitas Barang')
@@ -119,71 +164,83 @@ class AssetResource extends Resource
 
                 \Filament\Schemas\Components\Section::make('Pembelian')
                     ->schema([
-                        Components\TextInput::make('unit_price')
-                            ->label('Harga Satuan')
-                            ->numeric()
-                            ->prefix('Rp')
-                            ->nullable()
-                            ->live(onBlur: true)
-                            ->disabled(fn ($record) => $record && $record->purchaseItem && $record->purchaseItem->unit_price !== null)
-                            ->afterStateUpdated(function ($set, $get) {
-                                $qty = (int) $get('quantity') ?: 1;
-                                $price = $get('unit_price') !== null ? (float) $get('unit_price') : null;
-                                $set('total_price', $price !== null ? $price * $qty : null);
-                            }),
+                        \Filament\Schemas\Components\Group::make()->schema([
+                            Components\TextInput::make('unit_price')
+                                ->label('Harga Satuan')
+                                ->numeric()
+                                ->prefix('Rp')
+                                ->nullable()
+                                ->live(onBlur: true)
+                                ->disabled(fn ($record) => $record && $record->purchaseItem && $record->purchaseItem->unit_price !== null)
+                                ->afterStateUpdated(function ($set, $get) {
+                                    $qty = (int) $get('quantity') ?: 1;
+                                    $price = $get('unit_price') !== null ? (float) $get('unit_price') : null;
+                                    $set('total_price', $price !== null ? $price * $qty : null);
+                                }),
 
-                        Components\TextInput::make('quantity')
-                            ->label('Jumlah')
-                            ->numeric()
-                            ->default(1)
-                            ->required()
-                            ->live(onBlur: true)
-                            ->disabled(fn ($record) => $record !== null)
-                            ->afterStateUpdated(function ($set, $get) {
-                                $qty = (int) $get('quantity') ?: 1;
-                                $price = $get('unit_price') !== null ? (float) $get('unit_price') : null;
-                                $set('total_price', $price !== null ? $price * $qty : null);
-                            }),
-                            
-                        Components\Select::make('unit')
-                            ->label('Satuan')
-                            ->options([
-                                'Unit' => 'Unit', 'Pcs' => 'Pcs', 'Set' => 'Set',
-                                'Kg' => 'Kg', 'Paket' => 'Paket', 'Lembar' => 'Lembar',
-                                'Buah' => 'Buah', 'Meter' => 'Meter', 'Liter' => 'Liter',
-                            ])
-                            ->searchable()
-                            ->native(false),
-                            
-                        Components\TextInput::make('total_price')
-                            ->label('Total Harga')
-                            ->numeric()
-                            ->prefix('Rp')
-                            ->disabled()
-                            ->dehydrated(),
+                            Components\TextInput::make('quantity')
+                                ->label('Jumlah')
+                                ->numeric()
+                                ->default(1)
+                                ->required()
+                                ->live(onBlur: true)
+                                ->disabled(fn ($record) => $record !== null)
+                                ->afterStateUpdated(function ($set, $get) {
+                                    $qty = (int) $get('quantity') ?: 1;
+                                    $price = $get('unit_price') !== null ? (float) $get('unit_price') : null;
+                                    $set('total_price', $price !== null ? $price * $qty : null);
+                                }),
+                                
+                            Components\TextInput::make('total_price')
+                                ->label('Total Harga')
+                                ->numeric()
+                                ->prefix('Rp')
+                                ->disabled()
+                                ->dehydrated(),
+                                
+                            Components\Select::make('unit')
+                                ->label('Satuan')
+                                ->options([
+                                    'Unit' => 'Unit', 'Pcs' => 'Pcs', 'Set' => 'Set',
+                                    'Kg' => 'Kg', 'Paket' => 'Paket', 'Lembar' => 'Lembar',
+                                    'Buah' => 'Buah', 'Meter' => 'Meter', 'Liter' => 'Liter',
+                                ])
+                                ->searchable()
+                                ->native(false),
 
-                        Components\DatePicker::make('purchase_date')
-                            ->label('Tahun Perolehan')
-                            ->displayFormat('Y')
-                            ->format('Y-m-d')
-                            ->native(false),
+                            Components\DatePicker::make('purchase_date')
+                                ->label('Tahun Perolehan')
+                                ->displayFormat('Y')
+                                ->format('Y-m-d')
+                                ->native(false),
 
-                        Components\Select::make('ownership')
-                            ->label('Sumber Dana')
-                            ->options([
-                                'company' => 'Yayasan',
-                                'grant'   => 'Hibah',
-                                'loan'    => 'Pinjaman',
-                            ])
-                            ->native(false)
-                            ->required()
-                            ->default('company'),
+                            Components\Select::make('ownership')
+                                ->label('Sumber Dana')
+                                ->options([
+                                    'company' => 'Yayasan',
+                                    'grant'   => 'Hibah',
+                                    'loan'    => 'Pinjaman',
+                                ])
+                                ->native(false)
+                                ->required()
+                                ->default('company'),
+                        ])->columns(['default' => 1, 'md' => 2])->columnSpan(['default' => 1, 'md' => 2]),
+                        
+                        \Filament\Schemas\Components\Group::make()->schema([
+                            Components\FileUpload::make('invoice_document')
+                                ->label('Dokumen Invoice / Nota')
+                                ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'])
+                                ->maxSize(5120) // 5MB
+                                ->directory('invoice-documents')
+                                ->columnSpanFull(),
+                        ])->columnSpan(['default' => 1, 'md' => 1]),
                     ])
-                    ->columns(['default' => 1, 'md' => 2])
+                    ->columns(['default' => 1, 'md' => 3])
                     ->statePath('purchase_data')
                     ->visible(fn (callable $get) => filled($get('classification_id'))),
 
                 \Filament\Schemas\Components\Section::make('Penempatan')
+                    ->description(fn ($record) => $record?->status === 'baru_dilaporkan' ? 'Penempatan sementara. Jika lokasi tidak diubah, maka dianggap sudah sesuai (dikonfirmasi).' : '')
                     ->schema([
                         Components\Select::make('campus_id')
                             ->label('Gedung')
@@ -226,89 +283,99 @@ class AssetResource extends Resource
 
                 \Filament\Schemas\Components\Section::make('Detail Fisik & Spesifikasi')
                     ->schema([
-                        Components\TextInput::make('serial_number')
-                            ->label('Nomor Seri')
-                            ->maxLength(255)
-                            ->hidden(fn (callable $get) => ((int) ($get('purchase_data.quantity') ?: 1)) > 1 || $isPersediaan($get)),
+                        \Filament\Schemas\Components\Group::make()->schema([
+                            Components\TextInput::make('serial_number')
+                                ->label('Nomor Seri')
+                                ->maxLength(255)
+                                ->hidden(fn (callable $get) => ((int) ($get('purchase_data.quantity') ?: 1)) > 1 || $isPersediaan($get)),
 
-                        Components\Select::make('pic_id')
-                            ->label('Penanggung Jawab (PIC)')
-                            ->relationship('pic', 'name')
-                            ->searchable()
-                            ->preload()
-                            ->hidden(fn (callable $get) => ((int) ($get('purchase_data.quantity') ?: 1)) > 1),
+                            Components\Select::make('pic_id')
+                                ->label('Penanggung Jawab (PIC)')
+                                ->relationship('pic', 'name')
+                                ->searchable()
+                                ->preload()
+                                ->hidden(fn (callable $get) => ((int) ($get('purchase_data.quantity') ?: 1)) > 1)
+                                ->createOptionForm([
+                                    Components\TextInput::make('name')->label('Nama Lengkap')->required(),
+                                    Components\TextInput::make('employee_number')->label('Nomor Induk / NIP')->nullable(),
+                                    Components\TextInput::make('department')->label('Departemen')->nullable(),
+                                ]),
 
-                        Components\Select::make('status')
-                            ->label('Status')
-                            ->options([
-                                'stock'        => 'Stok (Gudang)',
-                                'active'       => 'Aktif / Digunakan',
-                                'borrowed'     => 'Dipinjam',
-                                'maintenance'  => 'Dalam Perbaikan',
-                                'lost'         => 'Hilang',
-                                'sold'         => 'Terjual',
-                                'disposed'     => 'Dihapuskan / Musnah',
-                            ])
-                            ->required()
-                            ->default('stock')
-                            ->native(false),
+                            Components\Select::make('status')
+                                ->label('Status')
+                                ->options([
+                                    'stock'             => 'Stok (Gudang)',
+                                    'active'            => 'Aktif / Digunakan',
+                                    'borrowed'          => 'Dipinjam',
+                                    'maintenance'       => 'Dalam Perbaikan',
+                                    'lost'              => 'Hilang',
+                                    'sold'              => 'Terjual',
+                                    'disposed'          => 'Dihapuskan / Musnah',
+                                    'baru_dilaporkan'   => 'Baru',
+                                ])
+                                ->required()
+                                ->default('stock')
+                                ->native(false),
 
-                        Components\Select::make('kondisi')
-                            ->label('Kondisi')
-                            ->options([
-                                'good'         => 'Baik',
-                                'minor_damage' => 'Rusak Ringan',
-                                'major_damage' => 'Rusak Berat',
-                            ])
-                            ->required()
-                            ->default('good')
-                            ->native(false),
-                            
-                        Components\Textarea::make('notes')
-                            ->label('Keterangan')
-                            ->columnSpanFull(),
+                            Components\Select::make('kondisi')
+                                ->label('Kondisi')
+                                ->options([
+                                    'good'         => 'Baik',
+                                    'minor_damage' => 'Rusak Ringan',
+                                    'major_damage' => 'Rusak Berat',
+                                ])
+                                ->required()
+                                ->default('good')
+                                ->native(false),
+                                
+                            Components\Textarea::make('notes')
+                                ->label('Keterangan')
+                                ->columnSpanFull(),
+                        ])->columns(['default' => 1, 'md' => 2])->columnSpan(['default' => 1, 'md' => 2]),
 
-                        Components\FileUpload::make('asset_photos')
-                            ->label('Foto Barang')
-                            ->multiple()
-                            ->maxFiles(3)
-                            ->image()
-                            ->imageEditor()
-                            ->imageResizeMode('contain')
-                            ->imageResizeTargetWidth('2000')
-                            ->imageResizeTargetHeight('2000')
-                            ->maxSize(5120) // 5MB limit per file
-                            ->directory('asset-photos')
-                            ->panelLayout('grid')
-                            ->appendFiles()
-                            ->formatStateUsing(function ($record) {
-                                if (! $record) return [];
-                                return $record->photos->sortBy('sort_order')->pluck('file_path')->toArray();
-                            })
-                            ->saveRelationshipsUsing(function ($component, $state, $record) {
-                                $existingPaths = $record->photos->pluck('file_path')->toArray();
-                                $newPaths = array_values($state ?? []);
-                                $deletedPaths = array_diff($existingPaths, $newPaths);
-                                foreach ($deletedPaths as $path) {
-                                    $record->photos()->where('file_path', $path)->first()?->delete();
-                                }
-                                $addedPaths = array_diff($newPaths, $existingPaths);
-                                foreach ($addedPaths as $path) {
-                                    $disk = \Illuminate\Support\Facades\Storage::disk('public');
-                                    $record->photos()->create([
-                                        'file_path' => $path,
-                                        'file_size' => $disk->exists($path) ? $disk->size($path) : null,
-                                        'mime_type' => $disk->exists($path) ? $disk->mimeType($path) : null,
-                                    ]);
-                                }
-                                foreach ($newPaths as $index => $path) {
-                                    $record->photos()->where('file_path', $path)->update(['sort_order' => $index]);
-                                }
-                            })
-                            ->dehydrated(false)
-                            ->columnSpanFull(),
+                        \Filament\Schemas\Components\Group::make()->schema([
+                            Components\FileUpload::make('asset_photos')
+                                ->label('Foto Barang')
+                                ->multiple()
+                                ->maxFiles(3)
+                                ->image()
+                                ->imageEditor()
+                                ->imageResizeMode('contain')
+                                ->imageResizeTargetWidth('2000')
+                                ->imageResizeTargetHeight('2000')
+                                ->maxSize(5120) // 5MB limit per file
+                                ->directory('asset-photos')
+                                ->panelLayout('grid')
+                                ->appendFiles()
+                                ->formatStateUsing(function ($record) {
+                                    if (! $record) return [];
+                                    return $record->photos->sortBy('sort_order')->pluck('file_path')->toArray();
+                                })
+                                ->saveRelationshipsUsing(function ($component, $state, $record) {
+                                    $existingPaths = $record->photos->pluck('file_path')->toArray();
+                                    $newPaths = array_values($state ?? []);
+                                    $deletedPaths = array_diff($existingPaths, $newPaths);
+                                    foreach ($deletedPaths as $path) {
+                                        $record->photos()->where('file_path', $path)->first()?->delete();
+                                    }
+                                    $addedPaths = array_diff($newPaths, $existingPaths);
+                                    foreach ($addedPaths as $path) {
+                                        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+                                        $record->photos()->create([
+                                            'file_path' => $path,
+                                            'file_size' => $disk->exists($path) ? $disk->size($path) : null,
+                                            'mime_type' => $disk->exists($path) ? $disk->mimeType($path) : null,
+                                        ]);
+                                    }
+                                    foreach ($newPaths as $index => $path) {
+                                        $record->photos()->where('file_path', $path)->update(['sort_order' => $index]);
+                                    }
+                                })
+                                ->dehydrated(false)
+                                ->columnSpanFull(),
+                        ])->columnSpan(['default' => 1, 'md' => 1]),
                     ])
-                    ->columns(['default' => 1, 'md' => 2])
+                    ->columns(['default' => 1, 'md' => 3])
                     ->visible(fn (callable $get) => filled($get('classification_id'))),
 
                 \Filament\Schemas\Components\Section::make('Informasi Akuntansi')
@@ -376,7 +443,7 @@ class AssetResource extends Resource
                 \Filament\Schemas\Components\Group::make()->schema([
                     Components\TextInput::make('inventory_number')->label('Kode Barang')->disabled()->visibleOn(['edit', 'view']),
                     Components\TextInput::make('barcode')->label('Barcode Number')->disabled()->visibleOn(['edit', 'view']),
-                ])->visible(fn ($record) => $record !== null),
+                ])->visible(fn ($record, callable $get) => $record !== null && filled($get('classification_id'))),
             ])->columns(1);
     }    public static function table(Table $table): Table
     {

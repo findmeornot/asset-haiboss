@@ -13,7 +13,7 @@ class AssetObserver
 {
     public function creating(Asset $asset): void
     {
-        if (empty($asset->barcode)) {
+        if (empty($asset->barcode) && $asset->status !== 'baru_dilaporkan') {
             $asset->barcode = \App\Services\BarcodeNumberGenerator::generate();
         }
     }

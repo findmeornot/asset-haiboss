@@ -64,7 +64,7 @@ class ReportedAssetResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('foto_resi')
                     ->label('Foto Resi')
-                    ->disk('public')
+                    ->disk('s3')
                     ->square(),
                 Tables\Columns\TextColumn::make('keterangan')
                     ->label('Keterangan')

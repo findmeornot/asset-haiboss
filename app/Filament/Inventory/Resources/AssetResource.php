@@ -65,7 +65,7 @@ class AssetResource extends Resource
                                             return '-';
                                         }
 
-                                        $url = e(\Illuminate\Support\Facades\Storage::disk('public')->url($record->foto_resi));
+                                        $url = e(\Illuminate\Support\Facades\Storage::disk('s3')->url($record->foto_resi));
 
                                         return new \Illuminate\Support\HtmlString(<<<HTML
                                             <div x-data="{ open: false }">
@@ -230,6 +230,7 @@ class AssetResource extends Resource
                         
                         \Filament\Schemas\Components\Group::make()->schema([
                             Components\FileUpload::make('invoice_document')
+                                ->disk('s3')
                                 ->label('Dokumen Invoice / Nota')
                                 ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'])
                                 ->maxSize(5120) // 5MB
@@ -344,6 +345,7 @@ class AssetResource extends Resource
 
                         \Filament\Schemas\Components\Group::make()->schema([
                             Components\FileUpload::make('asset_photos')
+                                ->disk('s3')
                                 ->label('Foto Barang')
                                 ->multiple()
                                 ->maxFiles(3)
@@ -369,7 +371,7 @@ class AssetResource extends Resource
                                     }
                                     $addedPaths = array_diff($newPaths, $existingPaths);
                                     foreach ($addedPaths as $path) {
-                                        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+                                        $disk = \Illuminate\Support\Facades\Storage::disk('s3');
                                         $record->photos()->create([
                                             'file_path' => $path,
                                             'file_size' => $disk->exists($path) ? $disk->size($path) : null,

@@ -24,13 +24,13 @@ class EditProfile extends BaseEditProfile
                     ->circleCropper()
                     ->avatar()
                     ->alignment(Alignment::Center)
-                    ->disk('public')
+                    ->disk('s3')
                     ->directory('avatars')
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg'])
                     ->maxSize(2048)
                     ->deletable()
                     ->deleteUploadedFileUsing(function ($file) {
-                        Storage::disk('public')->delete($file);
+                        Storage::disk('s3')->delete($file);
                     }),
                 $this->getNameFormComponent(),
                 $this->getEmailFormComponent(),

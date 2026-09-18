@@ -150,6 +150,7 @@ class ListUnifiedItems extends ListRecords
                         ')),
 
                     Components\FileUpload::make('import_file')
+                        ->disk('local')
                         ->label('Pilih File')
                         ->required()
                         ->acceptedFileTypes([

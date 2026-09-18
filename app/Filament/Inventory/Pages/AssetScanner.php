@@ -55,6 +55,7 @@ class AssetScanner extends Page implements HasForms
         return $form
             ->schema([
                 Components\FileUpload::make('asset_photos')
+                    ->disk('s3')
                     ->label('Upload Foto (Maks 3)')
                     ->multiple()
                     ->maxFiles(3)
@@ -93,7 +94,7 @@ class AssetScanner extends Page implements HasForms
         $addedPaths = array_diff($newPaths, $existingPaths);
         foreach ($addedPaths as $path) {
             /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
-            $disk = \Illuminate\Support\Facades\Storage::disk('public');
+            $disk = \Illuminate\Support\Facades\Storage::disk('s3');
             $record->photos()->create([
                 'file_path' => $path,
                 'file_size' => $disk->exists($path) ? $disk->size($path) : null,

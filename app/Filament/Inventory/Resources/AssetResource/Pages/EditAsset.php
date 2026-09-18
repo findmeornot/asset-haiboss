@@ -12,6 +12,15 @@ class EditAsset extends EditRecord
 {
     protected static string $resource = AssetResource::class;
 
+    public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        if ($this->record->status === 'baru_dilaporkan') {
+            return 'Input Invoice dan Data Barang';
+        }
+
+        return parent::getTitle();
+    }
+
     protected ?array $purchaseData = null;
 
     protected function getHeaderActions(): array

@@ -304,14 +304,15 @@ class AssetResource extends Resource
                             Components\Select::make('status')
                                 ->label('Status')
                                 ->options([
-                                    'stock'             => 'Stok (Gudang)',
-                                    'active'            => 'Aktif / Digunakan',
-                                    'borrowed'          => 'Dipinjam',
-                                    'maintenance'       => 'Dalam Perbaikan',
-                                    'lost'              => 'Hilang',
-                                    'sold'              => 'Terjual',
-                                    'disposed'          => 'Dihapuskan / Musnah',
-                                    'baru_dilaporkan'   => 'Baru',
+                                    'stock'               => 'Stok (Gudang)',
+                                    'active'              => 'Aktif / Digunakan',
+                                    'borrowed'            => 'Dipinjam',
+                                    'maintenance'         => 'Dalam Perbaikan',
+                                    'lost'                => 'Hilang',
+                                    'sold'                => 'Terjual',
+                                    'disposed'            => 'Dihapuskan / Musnah',
+                                    'baru_dilaporkan'     => 'Baru',
+                                    'menunggu_pengecekan' => 'Menunggu Pengecekan',
                                 ])
                                 ->required()
                                 ->default('stock')

@@ -58,27 +58,21 @@ class AssetResource extends Resource
                     ->schema([
                         \Filament\Schemas\Components\Grid::make(4)
                             ->schema([
-                                Components\Placeholder::make('foto_resi_preview')
-                                    ->hiddenLabel()
-                                    ->content(function ($record) {
-                                        if (! $record->foto_resi) {
-                                            return '-';
-                                        }
-
-                                        $url = e(\Illuminate\Support\Facades\Storage::disk('s3')->url($record->foto_resi));
-
-                                        return new \Illuminate\Support\HtmlString(<<<HTML
-                                            <div x-data="{ open: false }">
-                                                <img src="{$url}" @click="open = true"
-                                                    style="width:6rem;height:6rem;object-fit:cover;border-radius:0.5rem;cursor:zoom-in;" />
-                                                <div x-show="open" x-cloak @click="open = false"
-                                                    style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:2rem;">
-                                                    <img src="{$url}" @click.stop
-                                                        style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:0.5rem;" />
-                                                </div>
-                                            </div>
-                                            HTML);
-                                    })
+                                Components\FileUpload::make('foto_resi')
+                                    ->label('Foto Resi')
+                                    ->disk('s3')
+                                    ->directory('foto-resi')
+                                    ->image()
+                                    ->imageEditor()
+                                    ->openable()
+                                    ->downloadable()
+                                    ->hintAction(
+                                        \Filament\Actions\Action::make('view_image')
+                                            ->label('Buka Foto')
+                                            ->icon('heroicon-m-arrow-top-right-on-square')
+                                            ->url(fn ($record) => $record?->foto_resi ? \Illuminate\Support\Facades\Storage::disk('s3')->url($record->foto_resi) : null, true)
+                                            ->visible(fn ($record) => filled($record?->foto_resi))
+                                    )
                                     ->columnSpan(1),
                                 \Filament\Schemas\Components\Group::make()
                                     ->schema([

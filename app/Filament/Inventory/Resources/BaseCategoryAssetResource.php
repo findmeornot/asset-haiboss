@@ -34,7 +34,8 @@ abstract class BaseCategoryAssetResource extends Resource
         };
 
         return parent::getEloquentQuery()
-            ->whereHas('classification', fn (Builder $q) => $q->where('slug', $slug));
+            ->whereHas('classification', fn (Builder $q) => $q->where('slug', $slug))
+            ->whereNotIn('status', ['baru_dilaporkan', 'menunggu_pengecekan']);
     }
 
     public static function getNavigationGroup(): string|\UnitEnum|null

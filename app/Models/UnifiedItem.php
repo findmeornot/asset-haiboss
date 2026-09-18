@@ -29,7 +29,7 @@ class UnifiedItem extends Model
                 ->leftJoin('locations', 'assets.location_id', '=', 'locations.id')
                 ->leftJoin('purchase_items', 'assets.purchase_item_id', '=', 'purchase_items.id')
                 ->whereNull('assets.deleted_at')
-                ->where('assets.status', '!=', 'baru_dilaporkan')
+                ->whereNotIn('assets.status', ['baru_dilaporkan', 'menunggu_pengecekan'])
                 ->select(
                     DB::raw("CONCAT('asset_', assets.id) as id"),
                     'assets.id as raw_id',

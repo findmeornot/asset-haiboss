@@ -25,7 +25,7 @@ class ReportedAssetResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('status', 'baru_dilaporkan');
+            ->whereIn('status', ['baru_dilaporkan', 'menunggu_pengecekan']);
     }
 
     public static function getNavigationIcon(): string|\Illuminate\Contracts\Support\Htmlable|null
@@ -71,6 +71,21 @@ class ReportedAssetResource extends Resource
                     ->wrap()
                     ->limit(80)
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->toggleable()
+                    ->badge()
+                    ->sortable()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'baru_dilaporkan'     => 'Baru Dilaporkan',
+                        'menunggu_pengecekan' => 'Menunggu Pengecekan',
+                        default               => $state,
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'baru_dilaporkan'     => 'primary',
+                        'menunggu_pengecekan' => 'warning',
+                        default               => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('campus.name')
                     ->label('Gedung')
                     ->toggleable()

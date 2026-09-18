@@ -37,6 +37,11 @@ class EditAsset extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
+        if ($this->record->status === 'baru_dilaporkan') {
+            $data['status'] = 'menunggu_pengecekan';
+            $data['kondisi'] = 'unchecked';
+        }
+
         $data['purchase_data'] = [];
         
         if (array_key_exists('ownership', $data)) {

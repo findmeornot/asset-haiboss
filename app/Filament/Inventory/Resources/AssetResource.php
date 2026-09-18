@@ -316,7 +316,9 @@ class AssetResource extends Resource
                                 ])
                                 ->required()
                                 ->default('stock')
-                                ->native(false),
+                                ->native(false)
+                                ->disabled(fn (?\App\Models\Asset $record) => $record?->status === 'baru_dilaporkan')
+                                ->dehydrated(),
 
                             Components\Select::make('kondisi')
                                 ->label('Kondisi')
@@ -324,10 +326,13 @@ class AssetResource extends Resource
                                     'good'         => 'Baik',
                                     'minor_damage' => 'Rusak Ringan',
                                     'major_damage' => 'Rusak Berat',
+                                    'unchecked'    => 'Belum Dicek',
                                 ])
                                 ->required()
                                 ->default('good')
-                                ->native(false),
+                                ->native(false)
+                                ->disabled(fn (?\App\Models\Asset $record) => $record?->status === 'baru_dilaporkan')
+                                ->dehydrated(),
                                 
                             Components\Textarea::make('notes')
                                 ->label('Keterangan')

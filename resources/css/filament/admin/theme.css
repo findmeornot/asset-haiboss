@@ -73,11 +73,21 @@ aside.fi-sidebar,
 
 /* Custom smooth and small scrollbar */
 ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 3px !important;
+    height: 3px !important;
+}
+.fi-sidebar-nav {
+    margin-top: 46px !important;
+    margin-right: -4px !important; /* Shift scrollbar to the right to center with the button */
+    padding-top: 0 !important;
 }
 ::-webkit-scrollbar-track {
     background: transparent;
+}
+::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 ::-webkit-scrollbar-thumb {
     background: #d1d5db;

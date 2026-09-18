@@ -30,9 +30,20 @@ class EditAsset extends EditRecord
                 ->label('Kembali')
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
-                ->url(fn () => static::getResource()::getUrl('index')),
+                ->url(fn () => in_array($this->record->status, ['baru_dilaporkan', 'menunggu_pengecekan']) 
+                    ? \App\Filament\Inventory\Resources\ReportedAssetResource::getUrl('index') 
+                    : static::getResource()::getUrl('index')),
             Actions\DeleteAction::make(),
         ];
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        if (in_array($this->record->status, ['baru_dilaporkan', 'menunggu_pengecekan'])) {
+            return \App\Filament\Inventory\Resources\ReportedAssetResource::getUrl('index');
+        }
+
+        return $this->getResource()::getUrl('index');
     }
 
     protected function mutateFormDataBeforeFill(array $data): array

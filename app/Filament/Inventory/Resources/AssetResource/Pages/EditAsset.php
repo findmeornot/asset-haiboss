@@ -120,9 +120,14 @@ class EditAsset extends EditRecord
                 // Keep it in purchaseData for saving
             }
             if (array_key_exists('quantity', $this->purchaseData)) {
-                // Quantity is ignored during Edit to prevent orphan assets or missing assets.
-                // It must be edited at the PurchaseItem level directly if supported in the future.
-                unset($this->purchaseData['quantity']);
+                if ($this->record->status === 'baru_dilaporkan') {
+                    // Keep quantity in purchaseData to be used in afterSave
+                    // Do NOT set it in $data because Asset model doesn't have a quantity column
+                } else {
+                    // Quantity is ignored during Edit to prevent orphan assets or missing assets.
+                    // It must be edited at the PurchaseItem level directly if supported in the future.
+                    unset($this->purchaseData['quantity']);
+                }
             }
 
             // Enforce Immutability & Boundary Rules
@@ -262,22 +267,92 @@ class EditAsset extends EditRecord
                 }
                 
             } else {
-                // Legacy Fallback
-                $oldPrice = $this->record->purchase ? $this->record->purchase->unit_price : null;
-                $newPrice = $this->purchaseData['unit_price'] ?? null;
+                if (isset($this->purchaseData['quantity'])) {
+                    $quantity = (int) $this->purchaseData['quantity'];
+                    if ($quantity < 1) $quantity = 1;
 
-                $this->record->purchase()->updateOrCreate(
-                    ['asset_id' => $this->record->id],
-                    $this->purchaseData
-                );
+                    $unitPrice  = isset($this->purchaseData['unit_price'])  ? (float) $this->purchaseData['unit_price']  : 0;
+                    $totalPrice = isset($this->purchaseData['total_price'])  ? (float) $this->purchaseData['total_price'] : ($unitPrice * $quantity);
+                    $purchaseDate = $this->purchaseData['purchase_date'] ?? null;
+                    $ownership    = $this->purchaseData['ownership']     ?? 'company';
+                    $unit         = $this->purchaseData['unit']          ?? null;
 
-                if ($oldPrice != $newPrice) {
-                    AssetPriceHistory::create([
-                        'asset_id' => $this->record->id,
-                        'old_price' => $oldPrice,
-                        'new_price' => $newPrice,
-                        'changed_by' => Auth::id(),
+                    // Create Purchase header
+                    $purchase = \App\Models\Purchase::create([
+                        'purchase_date' => $purchaseDate,
+                        'ownership'     => $ownership,
+                        'total_amount'  => $totalPrice,
                     ]);
+
+                    $classification = $this->record->classification;
+
+                    $purchaseItemData = [
+                        'purchase_id'       => $purchase->id,
+                        'category_id'       => $this->record->category_id,
+                        'classification_id' => $this->record->classification_id,
+                        'name'              => $this->record->name,
+                        'quantity'          => $quantity,
+                        'unit'              => $unit,
+                        'unit_price'        => $unitPrice,
+                        'total_price'       => $totalPrice,
+                        'is_capitalized'    => \App\Models\PurchaseItem::isCapitalizable($unitPrice, $classification),
+                    ];
+
+                    if ($classification && strtolower($classification->slug) === 'barang-habis-pakai') {
+                        throw new \Exception("Mengubah Laporan ke Barang Habis Pakai (Supply) belum didukung via menu Edit. Silakan hapus laporan ini dan input manual via menu Barang Habis Pakai.");
+                    }
+
+                    $purchaseItem = \App\Models\PurchaseItem::create($purchaseItemData);
+                    
+                    // Link current asset to the new PurchaseItem
+                    $this->record->update(['purchase_item_id' => $purchaseItem->id]);
+
+                    // Clone the asset if quantity > 1
+                    for ($i = 1; $i < $quantity; $i++) {
+                        $newAsset = $this->record->replicate();
+                        $newAsset->inventory_number = \App\Services\InventoryNumberGenerator::generate();
+                        $newAsset->barcode = \App\Services\BarcodeNumberGenerator::generate();
+                        $newAsset->save();
+
+                        // Copy documents (invoice)
+                        foreach ($this->record->documents as $doc) {
+                            $newAsset->documents()->create([
+                                'type' => $doc->type,
+                                'document_path' => $doc->document_path,
+                            ]);
+                        }
+                        // Copy photos
+                        foreach ($this->record->photos as $photo) {
+                            $newAsset->photos()->create(array_diff_key($photo->toArray(), ['id' => true, 'asset_id' => true]));
+                        }
+                    }
+
+                    if ($unitPrice > 0) {
+                        AssetPriceHistory::create([
+                            'asset_id' => $this->record->id,
+                            'old_price' => null,
+                            'new_price' => $unitPrice,
+                            'changed_by' => Auth::id(),
+                        ]);
+                    }
+                } else {
+                    // Legacy Fallback (for older assets without purchaseItem and without quantity in purchaseData)
+                    $oldPrice = $this->record->purchase ? $this->record->purchase->unit_price : null;
+                    $newPrice = $this->purchaseData['unit_price'] ?? null;
+    
+                    $this->record->purchase()->updateOrCreate(
+                        ['asset_id' => $this->record->id],
+                        $this->purchaseData
+                    );
+    
+                    if ($oldPrice != $newPrice) {
+                        AssetPriceHistory::create([
+                            'asset_id' => $this->record->id,
+                            'old_price' => $oldPrice,
+                            'new_price' => $newPrice,
+                            'changed_by' => Auth::id(),
+                        ]);
+                    }
                 }
             }
         }

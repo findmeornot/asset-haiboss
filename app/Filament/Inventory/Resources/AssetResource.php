@@ -169,7 +169,7 @@ class AssetResource extends Resource
                                 ->label('Harga Satuan')
                                 ->numeric()
                                 ->prefix('Rp')
-                                ->nullable()
+                                ->required()
                                 ->live(onBlur: true)
                                 ->disabled(fn ($record) => $record && $record->purchaseItem && $record->purchaseItem->unit_price !== null)
                                 ->afterStateUpdated(function ($set, $get) {
@@ -184,7 +184,7 @@ class AssetResource extends Resource
                                 ->default(1)
                                 ->required()
                                 ->live(onBlur: true)
-                                ->disabled(fn ($record) => $record !== null)
+                                ->disabled(fn ($record) => $record !== null && $record->status !== 'baru_dilaporkan')
                                 ->afterStateUpdated(function ($set, $get) {
                                     $qty = (int) $get('quantity') ?: 1;
                                     $price = $get('unit_price') !== null ? (float) $get('unit_price') : null;
@@ -206,12 +206,14 @@ class AssetResource extends Resource
                                     'Buah' => 'Buah', 'Meter' => 'Meter', 'Liter' => 'Liter',
                                 ])
                                 ->searchable()
+                                ->required()
                                 ->native(false),
 
                             Components\DatePicker::make('purchase_date')
                                 ->label('Tahun Perolehan')
                                 ->displayFormat('Y')
                                 ->format('Y-m-d')
+                                ->required()
                                 ->native(false),
 
                             Components\Select::make('ownership')
@@ -232,6 +234,7 @@ class AssetResource extends Resource
                                 ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'])
                                 ->maxSize(5120) // 5MB
                                 ->directory('invoice-documents')
+                                ->required()
                                 ->columnSpanFull(),
                         ])->columnSpan(['default' => 1, 'md' => 1]),
                     ])

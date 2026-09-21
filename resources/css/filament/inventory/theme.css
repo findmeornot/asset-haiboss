@@ -26,7 +26,7 @@ aside.fi-sidebar,
     --tw-ring-color: var(--gray-600) !important;
 }
 
-.fi-btn:not(.fi-outlined):not(.fi-color) > .fi-icon {
+.fi-btn:not(.fi-outlined):not(.fi-color)>.fi-icon {
     color: var(--gray-600) !important;
 }
 
@@ -41,11 +41,13 @@ aside.fi-sidebar,
         position: absolute;
         top: -2px;
         left: 0;
-        right: 1px; /* Stop exactly before the right border to form a perfect L-shape */
+        right: 1px;
+        /* Stop exactly before the right border to form a perfect L-shape */
         height: 3px;
         background-color: #ffffff;
         z-index: 50;
     }
+
     :is(.dark .fi-sidebar)::before {
         background-color: #111827;
     }
@@ -73,39 +75,43 @@ aside.fi-sidebar,
 
 /* Custom smooth and small scrollbar */
 ::-webkit-scrollbar {
-    width: 2px !important;
-    height: 3px !important;
+    width: 1px !important;
+    height: 1px !important;
 }
+
 .fi-sidebar-nav {
-    margin-top: 46px !important;
-    margin-right: -4px !important; /* Shift scrollbar to the right to center with the button */
+    margin-top: 48px !important;
+    /* Start scrollbar below the toggle button (top-8 = 32px + half button = 44px) */
     padding-top: 0 !important;
+    /* Compensate for the margin so items don't drop too much */
 }
+
 ::-webkit-scrollbar-track {
     background: transparent;
 }
-::-webkit-scrollbar-button {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
+
 ::-webkit-scrollbar-thumb {
     background: #d1d5db;
     border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #9ca3af;
 }
+
 :is(.dark ::-webkit-scrollbar-thumb) {
     background: #4b5563;
 }
+
 :is(.dark ::-webkit-scrollbar-thumb:hover) {
     background: #6b7280;
 }
+
 * {
     scrollbar-width: thin;
     scrollbar-color: #d1d5db transparent;
 }
+
 :is(.dark *) {
     scrollbar-color: #4b5563 transparent;
 }

@@ -33,5 +33,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/barang-masuk/{barangMasuk}', [BarangMasukController::class, 'show'])->name('api.barang-masuk.show');
         Route::put('/barang-masuk/{barangMasuk}', [BarangMasukController::class, 'update'])->name('api.barang-masuk.update');
         Route::delete('/barang-masuk/{barangMasuk}', [BarangMasukController::class, 'destroy'])->name('api.barang-masuk.destroy');
+
+        // Pengecekan Barang (OB): foto fisik per posisi + penyelesaian pengecekan.
+        Route::post('/barang-masuk/{barangMasuk}/photos', [BarangMasukController::class, 'storePhoto'])->name('api.barang-masuk.photos.store');
+        Route::delete('/barang-masuk/{barangMasuk}/photos/{photo}', [BarangMasukController::class, 'destroyPhoto'])->name('api.barang-masuk.photos.destroy');
+        Route::get('/barang-masuk/{barangMasuk}/barcode-check', [BarangMasukController::class, 'checkBarcode'])->name('api.barang-masuk.barcode-check');
+        Route::post('/barang-masuk/{barangMasuk}/pengecekan', [BarangMasukController::class, 'complete'])->name('api.barang-masuk.pengecekan');
     });
 });

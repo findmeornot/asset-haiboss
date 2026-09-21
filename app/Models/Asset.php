@@ -47,15 +47,28 @@ class Asset extends Model {
         });
 
         static::forceDeleting(function (Asset $asset) {
-            foreach ($asset->photos as $photo) {
-                if ($photo->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($photo->file_path)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($photo->file_path);
+            // File bisa berada di disk `public` (upload lama) atau disk default/S3
+            // (upload Filament & API pengecekan), jadi hapus dari keduanya.
+            $disks = array_unique(['public', config('filesystems.default')]);
+
+            $deleteFile = function (?string $path) use ($disks) {
+                if (! $path) {
+                    return;
                 }
+
+                foreach ($disks as $diskName) {
+                    $disk = \Illuminate\Support\Facades\Storage::disk($diskName);
+                    if ($disk->exists($path)) {
+                        $disk->delete($path);
+                    }
+                }
+            };
+
+            foreach ($asset->photos as $photo) {
+                $deleteFile($photo->file_path);
             }
 
-            if ($asset->foto_resi && \Illuminate\Support\Facades\Storage::disk('public')->exists($asset->foto_resi)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($asset->foto_resi);
-            }
+            $deleteFile($asset->foto_resi);
         });
     }
 

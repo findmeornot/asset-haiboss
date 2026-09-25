@@ -28,6 +28,17 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    /*
+     * BFF (Express) aplikasi OB. Dipakai RealtimePusher untuk mendorong
+     * notifikasi ke browser lewat SSE, jadi frontend tidak perlu polling.
+     * Kosongkan BFF_PUSH_URL untuk mematikan push realtime.
+     */
+    'bff' => [
+        'push_url' => env('BFF_PUSH_URL'),
+        'push_secret' => env('BFF_PUSH_SECRET'),
+        'push_timeout' => env('BFF_PUSH_TIMEOUT', 3),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

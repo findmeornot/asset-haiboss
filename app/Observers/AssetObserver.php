@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\AssetLocationHistory;
 use App\Models\AssetPriceHistory;
 use App\Models\AssetStatusHistory;
+use App\Services\ActivityNotifier;
 use App\Services\AuditLogger;
 use Illuminate\Support\Facades\Auth;
 
@@ -60,6 +61,15 @@ class AssetObserver
         } else {
             // General Update
             AuditLogger::log('updated', $asset, $original, $changes);
+        }
+
+        // Admin selesai melengkapi data & lokasi final (lewat panel Filament
+        // maupun API) → pelapor (OB) diberi tahu barangnya sudah bisa dicek.
+        if ($asset->wasChanged('status') && $asset->status === 'menunggu_pengecekan') {
+            app(ActivityNotifier::class)->siapDicek(
+                $asset->loadMissing(['campus', 'location']),
+                Auth::user(),
+            );
         }
     }
 

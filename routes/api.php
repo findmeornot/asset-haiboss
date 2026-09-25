@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BarangMasukController;
 use App\Http\Controllers\Api\CampusController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -39,5 +40,13 @@ Route::prefix('v1')->group(function () {
         Route::delete('/barang-masuk/{barangMasuk}/photos/{photo}', [BarangMasukController::class, 'destroyPhoto'])->name('api.barang-masuk.photos.destroy');
         Route::get('/barang-masuk/{barangMasuk}/barcode-check', [BarangMasukController::class, 'checkBarcode'])->name('api.barang-masuk.barcode-check');
         Route::post('/barang-masuk/{barangMasuk}/pengecekan', [BarangMasukController::class, 'complete'])->name('api.barang-masuk.pengecekan');
+
+        // Notifikasi aktivitas milik user yang login (table `notifications`).
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('api.notifications.unread-count');
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.read-all');
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('api.notifications.read');
+        Route::delete('/notifications', [NotificationController::class, 'clear'])->name('api.notifications.clear');
+        Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('api.notifications.destroy');
     });
 });

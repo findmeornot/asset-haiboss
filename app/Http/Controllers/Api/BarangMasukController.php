@@ -7,6 +7,8 @@ use App\Models\Asset;
 use App\Models\AssetPhoto;
 use App\Models\InventoryBalance;
 use App\Models\InventoryBalanceUnit;
+use App\Services\ActivityNotifier;
+use App\Services\BarcodeNumberGenerator;
 use App\Services\InventoryNumberGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,14 +20,16 @@ use Illuminate\Validation\Rule;
 /**
  * Lapor Barang Datang tidak punya table sendiri — ini cuma tahap awal
  * lifecycle Asset. OB lapor foto_resi + keterangan + lokasi sementara,
- * record `Asset` langsung dibuat (identitas barang & inventory_number masih
- * kosong), admin melengkapi sisanya lewat update() sampai nomor aset
- * ditentukan saat proses Penempatan.
+ * record `Asset` langsung dibuat berikut kode barcode & inventory_number-nya,
+ * admin melengkapi identitas barang lewat update(), lalu OB menyelesaikan
+ * pengecekan fisik lewat complete().
  */
 class BarangMasukController extends Controller
 {
     /** Minimal foto fisik yang wajib diunggah sebelum pengecekan bisa diselesaikan. */
     private const MIN_PENGECEKAN_PHOTOS = 2;
+
+    public function __construct(private ActivityNotifier $notifier) {}
 
     /**
      * URL publik sebuah file. Upload lama tersimpan di disk `public`, upload
@@ -133,8 +137,8 @@ class BarangMasukController extends Controller
 
     /**
      * Lapor Barang Datang: OB/user cuma isi foto resi, keterangan, & lokasi
-     * sementara (opsional). Identitas barang & nomor aset dilengkapi admin
-     * belakangan lewat update() — nomor baru dipasang saat proses Penempatan.
+     * sementara (opsional). Kode barcode & nomor aset langsung digenerate di
+     * sini; identitas barang dilengkapi admin belakangan lewat update().
      */
     public function store(Request $request): JsonResponse
     {
@@ -167,6 +171,10 @@ class BarangMasukController extends Controller
                 'location_confirmed' => false,
                 'reported_by' => $request->user()->id,
                 'status' => 'baru_dilaporkan',
+                // Kode barcode & nomor aset langsung terbit saat lapor, supaya
+                // label bisa dicetak sebelum barang dicek OB.
+                'barcode' => BarcodeNumberGenerator::generate(),
+                'inventory_number' => InventoryNumberGenerator::generate(),
             ]);
         } catch (\InvalidArgumentException $e) {
             Storage::disk($disk)->delete($path);
@@ -176,9 +184,15 @@ class BarangMasukController extends Controller
             ], 422);
         }
 
+        $asset->load(['campus', 'location', 'reportedBy']);
+
+        // Petugas inventaris perlu tahu ada laporan baru yang menunggu
+        // kelengkapan data & penentuan lokasi.
+        $this->notifier->barangDilaporkan($asset, $request->user());
+
         return response()->json([
             'message' => 'Laporan barang datang berhasil dikirim.',
-            'data' => $this->serialize($asset->load(['campus', 'location', 'reportedBy'])),
+            'data' => $this->serialize($asset),
         ], 201);
     }
 
@@ -230,9 +244,14 @@ class BarangMasukController extends Controller
             ], 422);
         }
 
+        // Notifikasi "barang siap dicek" dikirim dari AssetObserver saat status
+        // berubah jadi `menunggu_pengecekan`, supaya edit lewat panel admin
+        // Filament juga ikut memberi tahu pelapor.
+        $barangMasuk->load(['campus', 'location', 'reportedBy']);
+
         return response()->json([
             'message' => 'Laporan barang datang berhasil diperbarui.',
-            'data' => $this->serialize($barangMasuk->load(['campus', 'location', 'reportedBy'])),
+            'data' => $this->serialize($barangMasuk),
         ]);
     }
 
@@ -393,9 +412,9 @@ class BarangMasukController extends Controller
     }
 
     /**
-     * Selesaikan Pengecekan Barang (OB): daftarkan kode barcode dari label
-     * fisik yang ditempel ke unit, konfirmasi barang sudah berada di lokasi
-     * yang ditentukan admin, lalu terbitkan nomor asetnya.
+     * Selesaikan Pengecekan Barang (OB): konfirmasi foto fisik, label barcode
+     * (hasil generate saat lapor) sudah ditempel, dan barang sudah berada di
+     * lokasi yang ditentukan admin.
      *
      * Barang yang masih `baru_dilaporkan` belum boleh dicek — admin harus
      * melengkapi identitas & lokasi finalnya dulu (status jadi
@@ -410,9 +429,6 @@ class BarangMasukController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            // Kode dari label barcode fisik yang ditempel OB ke unit. Keunikannya
-            // dicek lintas data barang lewat findBarcodeOwner() di bawah.
-            'barcode' => ['required', 'string', 'max:255'],
             'serial_number' => [
                 'sometimes',
                 'nullable',
@@ -431,19 +447,6 @@ class BarangMasukController extends Controller
             ], 422);
         }
 
-        $barcode = trim($request->string('barcode')->value());
-        $owner = $this->findBarcodeOwner($barcode, $barangMasuk->id);
-
-        if ($owner) {
-            return response()->json([
-                'message' => 'Kode barcode "' . $barcode . '" sudah dipakai '
-                    . strtolower($owner['label'])
-                    . ($owner['name'] ? ' (' . $owner['name'] . ')' : '')
-                    . '. Gunakan label barcode lain.',
-                'errors' => ['barcode' => ['Kode barcode sudah terdaftar di barang lain.']],
-            ], 422);
-        }
-
         if ($barangMasuk->photos()->count() < self::MIN_PENGECEKAN_PHOTOS) {
             return response()->json([
                 'message' => 'Minimal ' . self::MIN_PENGECEKAN_PHOTOS . ' foto fisik barang wajib diunggah sebelum pengecekan diselesaikan.',
@@ -451,7 +454,6 @@ class BarangMasukController extends Controller
         }
 
         $updates = [
-            'barcode' => $barcode,
             'kondisi' => $request->input('kondisi', 'good'),
             'location_confirmed' => true,
             'status' => 'stock',
@@ -467,8 +469,12 @@ class BarangMasukController extends Controller
             $updates['keterangan'] = $request->input('keterangan');
         }
 
-        // Nomor aset memang baru terbit di tahap ini (lihat alur Lapor Barang
-        // Datang: "nomor aset ditentukan saat proses penempatan").
+        // Barcode & nomor aset sudah terbit saat lapor (store()). Fallback ini
+        // cuma untuk laporan lama yang dibuat sebelum alur itu berlaku.
+        if (blank($barangMasuk->barcode)) {
+            $updates['barcode'] = BarcodeNumberGenerator::generate();
+        }
+
         if (blank($barangMasuk->inventory_number)) {
             $updates['inventory_number'] = InventoryNumberGenerator::generate();
         }
@@ -481,9 +487,13 @@ class BarangMasukController extends Controller
             ], 422);
         }
 
+        $barangMasuk->load(['campus', 'location', 'reportedBy', 'pic', 'category', 'photos']);
+
+        $this->notifier->pengecekanSelesai($barangMasuk, $request->user());
+
         return response()->json([
-            'message' => 'Pengecekan barang selesai. Kode barcode terdaftar & nomor aset terbit.',
-            'data' => $this->serialize($barangMasuk->load(['campus', 'location', 'reportedBy', 'pic', 'category', 'photos'])),
+            'message' => 'Pengecekan barang selesai.',
+            'data' => $this->serialize($barangMasuk),
         ]);
     }
 

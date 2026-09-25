@@ -17,7 +17,10 @@ class LocationController extends Controller
         $perPage = (int) $request->integer('per_page', 15);
         $perPage = max(1, min($perPage, 100));
 
-        $query = Location::query()->with('campus');
+        // assets_count sama filter default katalog aset (sembunyikan baru_dilaporkan).
+        $query = Location::query()
+            ->with('campus')
+            ->withCount(['assets' => fn ($q) => $q->where('status', '!=', 'baru_dilaporkan')]);
 
         if ($search = $request->string('search')->trim()->value()) {
             $query->where('name', 'like', "%{$search}%");

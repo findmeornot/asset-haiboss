@@ -80,6 +80,8 @@ class Asset extends Model {
     public function purchase(): HasOne { return $this->hasOne(AssetPurchase::class); } // Legacy
     public function purchaseItem(): BelongsTo { return $this->belongsTo(PurchaseItem::class); }
     public function reportedBy(): BelongsTo { return $this->belongsTo(User::class, 'reported_by'); }
+    public function intakeParent(): BelongsTo { return $this->belongsTo(Asset::class, 'intake_parent_id'); }
+    public function intakeUnits(): HasMany { return $this->hasMany(Asset::class, 'intake_parent_id'); }
     public function financial(): HasOne { return $this->hasOne(AssetFinancial::class); }
     public function documents(): HasMany { return $this->hasMany(AssetDocument::class); }
     public function photos(): HasMany { return $this->hasMany(AssetPhoto::class); }

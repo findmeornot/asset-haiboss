@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\HtmlString;
 
 /**
  * Antrian Finance untuk Asset hasil "Lapor Barang Datang" oleh OB
@@ -205,46 +206,19 @@ class AntrianBarangMasukResource extends Resource
                                 : 'Belum dilengkapi Finance.')
                             ->columnSpanFull(),
 
-                        Section::make('Identitas Barang')
-                            ->schema([
-                                Components\Placeholder::make('finance_name')
-                                    ->label('Nama Barang')
-                                    ->content(fn (?Asset $record) => $record?->name ?: '-'),
-
-                                Components\Placeholder::make('finance_brand')
-                                    ->label('Merk / Tipe')
-                                    ->content(fn (?Asset $record) => $record?->brand ?: '-'),
-
-                                Components\Placeholder::make('finance_classification')
-                                    ->label('Klasifikasi')
-                                    ->content(fn (?Asset $record) => $record?->classification?->name ?: '-'),
-
-                                Components\Placeholder::make('finance_category')
-                                    ->label('Kategori')
-                                    ->content(fn (?Asset $record) => $record?->category?->name ?: '-'),
-                            ])
-                            ->columns(2),
+                        Components\Placeholder::make('finance_invoice_items')
+                            ->label('Rincian Invoice')
+                            ->visible(fn (?Asset $record) => filled($record?->purchase_item_id))
+                            ->content(fn (?Asset $record) => static::renderInvoiceItems($record))
+                            ->columnSpanFull(),
 
                         Section::make('Pembelian')
+                            ->visible(fn (?Asset $record) => filled($record?->purchase_item_id))
                             ->schema([
-                                Components\Placeholder::make('finance_unit_price')
-                                    ->label('Harga Satuan')
-                                    ->content(fn (?Asset $record) => $record?->purchaseItem?->unit_price !== null
-                                        ? 'Rp '.number_format((float) $record->purchaseItem->unit_price, 0, ',', '.')
-                                        : '-'),
-
-                                Components\Placeholder::make('finance_quantity')
-                                    ->label('Jumlah')
-                                    ->content(fn (?Asset $record) => $record?->purchaseItem?->quantity ?? '-'),
-
-                                Components\Placeholder::make('finance_unit')
-                                    ->label('Satuan')
-                                    ->content(fn (?Asset $record) => $record?->purchaseItem?->unit ?: '-'),
-
-                                Components\Placeholder::make('finance_total_price')
-                                    ->label('Total Harga')
-                                    ->content(fn (?Asset $record) => $record?->purchaseItem?->total_price !== null
-                                        ? 'Rp '.number_format((float) $record->purchaseItem->total_price, 0, ',', '.')
+                                Components\Placeholder::make('finance_total_amount')
+                                    ->label('Total Invoice')
+                                    ->content(fn (?Asset $record) => $record?->purchaseItem?->purchase?->total_amount !== null
+                                        ? 'Rp '.number_format((float) $record->purchaseItem->purchase->total_amount, 0, ',', '.')
                                         : '-'),
 
                                 Components\Placeholder::make('finance_purchase_date')
@@ -261,25 +235,59 @@ class AntrianBarangMasukResource extends Resource
                                     }),
                             ])
                             ->columns(3),
-
-                        Section::make('Penempatan')
-                            ->schema([
-                                Components\Placeholder::make('finance_campus')
-                                    ->label('Gedung')
-                                    ->content(fn (?Asset $record) => $record?->campus?->name ?: '-'),
-
-                                Components\Placeholder::make('finance_location')
-                                    ->label('Ruangan')
-                                    ->content(fn (?Asset $record) => $record?->location?->name ?: '-'),
-
-                                Components\Placeholder::make('finance_inventory_number')
-                                    ->label('Nomor Inventaris')
-                                    ->content(fn (?Asset $record) => $record?->inventory_number ?: '-'),
-                            ])
-                            ->columns(3),
                     ]),
             ])
             ->columns(1);
+    }
+
+    /**
+     * Semua unit hasil satu laporan (laporan itu sendiri + intakeUnits),
+     * dikelompokkan per PurchaseItem: satu baris per jenis barang di invoice.
+     */
+    protected static function renderInvoiceItems(?Asset $record): HtmlString
+    {
+        if (! $record) {
+            return new HtmlString('-');
+        }
+
+        $units = Asset::query()
+            ->where(fn ($q) => $q->whereKey($record->getKey())->orWhere('intake_parent_id', $record->getKey()))
+            ->with(['purchaseItem', 'classification', 'category', 'campus', 'location'])
+            ->orderBy('id')
+            ->get()
+            ->groupBy('purchase_item_id');
+
+        $rupiah = fn ($value) => $value !== null ? 'Rp '.number_format((float) $value, 0, ',', '.') : '-';
+
+        $rows = $units->map(function ($group) use ($rupiah) {
+            $first = $group->first();
+            $item = $first->purchaseItem;
+            $lokasi = $group
+                ->map(fn (Asset $unit) => trim(($unit->campus?->name ?? '-').($unit->location ? ' / '.$unit->location->name : '')))
+                ->unique()
+                ->implode(', ');
+
+            return '<tr class="border-t border-gray-200 dark:border-white/10">'
+                .'<td class="py-2 pe-3">'.e($first->name ?: '-').($first->brand ? '<div class="text-xs text-gray-500">'.e($first->brand).'</div>' : '').'</td>'
+                .'<td class="py-2 pe-3">'.e($first->classification?->name ?? '-').'<div class="text-xs text-gray-500">'.e($first->category?->name ?? '-').'</div></td>'
+                .'<td class="py-2 pe-3 text-right">'.$group->count().' '.e($item?->unit ?: 'unit').'</td>'
+                .'<td class="py-2 pe-3 text-right">'.$rupiah($item?->unit_price).'</td>'
+                .'<td class="py-2 pe-3 text-right">'.$rupiah($item?->total_price).'</td>'
+                .'<td class="py-2">'.e($lokasi).'</td>'
+                .'</tr>';
+        })->implode('');
+
+        return new HtmlString(
+            '<div class="overflow-x-auto"><table class="w-full text-sm">'
+            .'<thead><tr class="text-left text-gray-500">'
+            .'<th class="pb-2 pe-3 font-medium">Barang</th>'
+            .'<th class="pb-2 pe-3 font-medium">Klasifikasi / Kategori</th>'
+            .'<th class="pb-2 pe-3 font-medium text-right">Jumlah</th>'
+            .'<th class="pb-2 pe-3 font-medium text-right">Harga Satuan</th>'
+            .'<th class="pb-2 pe-3 font-medium text-right">Total</th>'
+            .'<th class="pb-2 font-medium">Penempatan</th>'
+            .'</tr></thead><tbody>'.$rows.'</tbody></table></div>'
+        );
     }
 
     /**
@@ -337,6 +345,12 @@ class AntrianBarangMasukResource extends Resource
                     ->label('Tanggal Laporan')
                     ->dateTime('d M Y H:i')
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('intake_units_count')
+                    ->label('Jumlah Unit')
+                    ->counts('intakeUnits')
+                    ->formatStateUsing(fn ($state, Asset $record) => $record->purchase_item_id ? ((int) $state + 1).' unit' : '-')
+                    ->alignCenter(),
 
                 Tables\Columns\TextColumn::make('campus.name')
                     ->label('Gedung')

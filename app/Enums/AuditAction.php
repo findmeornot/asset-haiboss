@@ -16,13 +16,14 @@ enum AuditAction: string
     case UPDATED = 'updated';
     case DELETED = 'deleted';
     case RESTORED = 'restored';
-    
+
     // Asset Specific
     case PRICE_CHANGE = 'price_change';
     case LOCATION_CHANGE = 'location_change';
     case PIC_CHANGE = 'pic_change';
     case STATUS_CHANGE = 'status_change';
-    
+    case SKU_CHANGE = 'sku_change';
+
     // Media
     case PHOTO_UPLOADED = 'photo_uploaded';
     case PHOTO_DELETED = 'photo_deleted';
@@ -47,7 +48,7 @@ enum AuditAction: string
     case USER_DISABLED = 'user_disabled';
     case ROLE_CHANGED = 'role_changed';
     case PERMISSION_CHANGED = 'permission_changed';
-    
+
     public function label(): string
     {
         return str($this->value)->replace('_', ' ')->title()->toString();

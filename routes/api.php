@@ -33,6 +33,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/barang-masuk', [BarangMasukController::class, 'store'])->name('api.barang-masuk.store');
         Route::get('/barang-masuk/{barangMasuk}', [BarangMasukController::class, 'show'])->name('api.barang-masuk.show');
         Route::put('/barang-masuk/{barangMasuk}', [BarangMasukController::class, 'update'])->name('api.barang-masuk.update');
+        Route::post('/barang-masuk/{barangMasuk}/foto-resi', [BarangMasukController::class, 'replaceFotoResi'])->name('api.barang-masuk.foto-resi');
         Route::delete('/barang-masuk/{barangMasuk}', [BarangMasukController::class, 'destroy'])->name('api.barang-masuk.destroy');
 
         // Pengecekan Barang (OB): foto fisik per posisi + penyelesaian pengecekan.

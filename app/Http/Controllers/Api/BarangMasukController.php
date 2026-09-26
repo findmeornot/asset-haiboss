@@ -256,6 +256,45 @@ class BarangMasukController extends Controller
     }
 
     /**
+     * Ganti foto resi laporan (OB salah foto / foto buram). File lama dihapus
+     * setelah file baru tersimpan & tercatat.
+     */
+    public function replaceFotoResi(Request $request, Asset $barangMasuk): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'foto_resi' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Data tidak valid.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // Disk default (S3), sama dengan store(), supaya tampil di panel Filament.
+        $disk = config('filesystems.default');
+        $file = $request->file('foto_resi');
+        $path = $file->storeAs('barang-masuk', Str::random(20) . '.' . $file->extension(), $disk);
+
+        $oldPath = $barangMasuk->foto_resi;
+        $barangMasuk->update(['foto_resi' => $path]);
+
+        // Upload lama bisa di disk `public` (lihat fileUrl()), hapus dari keduanya.
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+            Storage::disk($disk)->delete($oldPath);
+        }
+
+        $barangMasuk->load(['campus', 'location', 'reportedBy']);
+
+        return response()->json([
+            'message' => 'Foto resi berhasil diganti.',
+            'data' => $this->serialize($barangMasuk),
+        ]);
+    }
+
+    /**
      * Cari pemakai kode barcode di seluruh data barang: aset (`assets.barcode`
      * & `assets.inventory_number`) maupun barang habis pakai
      * (`inventory_balances.master_barcode` & `inventory_balance_units.sub_barcode`).

@@ -133,7 +133,7 @@ class LengkapiBarangMasuk extends EditRecord
                         ->itemLabel(fn (array $state): ?string => filled($state['name'] ?? null)
                             ? $state['name'].' ('.max(1, (int) ($state['quantity'] ?? 1)).' '.(($state['unit'] ?? null) ?: 'unit').')'
                             : 'Barang baru')
-                        ->columns(2)
+                        ->columns(3)
                         ->schema([
                             Components\Hidden::make('row_id')
                                 ->default(fn () => (string) Str::uuid()),
@@ -181,6 +181,16 @@ class LengkapiBarangMasuk extends EditRecord
                                 ])
                                 ->createOptionUsing(fn (array $data) => $data['brand']),
 
+                            Components\Select::make('unit')
+                                ->label('Satuan')
+                                ->options([
+                                    'Unit' => 'Unit', 'Pcs' => 'Pcs', 'Set' => 'Set',
+                                    'Kg' => 'Kg', 'Paket' => 'Paket', 'Lembar' => 'Lembar',
+                                    'Buah' => 'Buah', 'Meter' => 'Meter', 'Liter' => 'Liter',
+                                ])
+                                ->searchable()
+                                ->native(false),
+
                             Components\TextInput::make('unit_price')
                                 ->label('Harga Perolehan (per unit)')
                                 ->numeric()
@@ -202,16 +212,6 @@ class LengkapiBarangMasuk extends EditRecord
                                 ->required()
                                 ->live(onBlur: true)
                                 ->afterStateUpdated(fn (callable $set, callable $get) => static::syncTotalPrice($set, $get)),
-
-                            Components\Select::make('unit')
-                                ->label('Satuan')
-                                ->options([
-                                    'Unit' => 'Unit', 'Pcs' => 'Pcs', 'Set' => 'Set',
-                                    'Kg' => 'Kg', 'Paket' => 'Paket', 'Lembar' => 'Lembar',
-                                    'Buah' => 'Buah', 'Meter' => 'Meter', 'Liter' => 'Liter',
-                                ])
-                                ->searchable()
-                                ->native(false),
 
                             Components\TextInput::make('total_price')
                                 ->label('Total Harga')
@@ -240,7 +240,8 @@ class LengkapiBarangMasuk extends EditRecord
                                     : [])
                                 ->searchable()
                                 ->required()
-                                ->helperText('Kategori mengikuti Klasifikasi hasil Jenis Barang & Harga Perolehan.'),
+                                ->helperText('Kategori mengikuti Klasifikasi hasil Jenis Barang & Harga Perolehan.')
+                                ->columnSpan(2),
                         ]),
                 ]),
 

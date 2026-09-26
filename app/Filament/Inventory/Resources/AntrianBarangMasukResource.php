@@ -50,7 +50,7 @@ class AntrianBarangMasukResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return 'Antrian Barang Masuk';
+        return 'Barang Masuk';
     }
 
     /**
@@ -77,7 +77,7 @@ class AntrianBarangMasukResource extends Resource
 
     public static function getPluralModelLabel(): string
     {
-        return 'Antrian Barang Masuk';
+        return 'Barang Masuk';
     }
 
     /**
@@ -294,12 +294,6 @@ class AntrianBarangMasukResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'asc')
-            ->contentGrid([
-                'default' => 1,
-                'sm' => 2,
-                'lg' => 3,
-                'xl' => 4,
-            ])
             ->filtersLayout(Tables\Enums\FiltersLayout::AfterContent)
             ->filters([
                 Tables\Filters\SelectFilter::make('campus_id')
@@ -324,8 +318,8 @@ class AntrianBarangMasukResource extends Resource
                 Tables\Columns\ImageColumn::make('foto_resi')
                     ->label('Foto')
                     ->disk(config('filesystems.default'))
-                    ->height(120)
-                    ->extraImgAttributes(['class' => 'w-full object-cover rounded-lg'])
+                    ->height(64)
+                    ->extraImgAttributes(['class' => 'object-cover rounded-lg'])
                     ->placeholder('Tidak ada foto.'),
 
                 Tables\Columns\TextColumn::make('keterangan')
@@ -373,11 +367,8 @@ class AntrianBarangMasukResource extends Resource
             ])
             ->recordActions([
                 Actions\EditAction::make()
-                    ->label('Lengkapi Data'),
-
-                Actions\ViewAction::make()
-                    ->label('Detail')
-                    ->color('gray'),
+                    ->label('Invoice')
+                    ->icon('heroicon-o-plus'),
             ])
             ->bulkActions([]);
     }

@@ -31,7 +31,7 @@ class EditAsset extends EditRecord
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
                 ->url(fn () => in_array($this->record->status, ['baru_dilaporkan', 'menunggu_pengecekan']) 
-                    ? \App\Filament\Inventory\Resources\ReportedAssetResource::getUrl('index') 
+                    ? \App\Filament\Inventory\Resources\AntrianBarangMasukResource::getUrl('index') 
                     : static::getResource()::getUrl('index')),
             Actions\DeleteAction::make(),
         ];
@@ -40,7 +40,7 @@ class EditAsset extends EditRecord
     protected function getRedirectUrl(): string
     {
         if (in_array($this->record->status, ['baru_dilaporkan', 'menunggu_pengecekan'])) {
-            return \App\Filament\Inventory\Resources\ReportedAssetResource::getUrl('index');
+            return \App\Filament\Inventory\Resources\AntrianBarangMasukResource::getUrl('index');
         }
 
         return $this->getResource()::getUrl('index');

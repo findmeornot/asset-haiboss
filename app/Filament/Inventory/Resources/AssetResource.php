@@ -9,7 +9,9 @@ use Filament\Forms\Components;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class AssetResource extends Resource
@@ -20,6 +22,27 @@ class AssetResource extends Resource
     public static function getNavigationIcon(): string | \Illuminate\Contracts\Support\Htmlable | null
     {
         return 'heroicon-o-cube';
+    }
+
+    /**
+     * Asset berstatus `baru_dilaporkan`/`menunggu_pengecekan` adalah intake
+     * OB yang belum dilengkapi Finance (lihat
+     * AntrianBarangMasukResource::getEditAuthorizationResponse()). Permission
+     * granular `intake.complete` dibuat khusus supaya alur "Lengkapi Data"
+     * hanya bisa dilakukan lewat AntrianBarangMasukResource oleh Finance —
+     * override ini menutup jalur pintas edit langsung via AssetResource
+     * (yang tadinya hanya dicek `assets.update`) untuk record berstatus sama.
+     */
+    public static function getEditAuthorizationResponse(Model $record): Response
+    {
+        if (in_array($record->status, ['baru_dilaporkan', 'menunggu_pengecekan'], true)
+            && ! Auth::user()->hasPermissionTo('intake.complete')) {
+            return Response::deny('Barang ini masih dalam antrian intake dan hanya dapat dilengkapi lewat menu Antrian Barang Masuk.');
+        }
+
+        return Auth::user()->hasPermissionTo('assets.update')
+            ? Response::allow()
+            : Response::deny();
     }
 
     public static function getNavigationGroup(): string | \UnitEnum | null

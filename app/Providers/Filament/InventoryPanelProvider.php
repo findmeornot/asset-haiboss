@@ -65,6 +65,10 @@ class InventoryPanelProvider extends PanelProvider
                 fn () => view('filament.components.custom-stats-css')
             )
             ->renderHook(
+                PanelsRenderHook::CONTENT_START,
+                fn () => view('filament.components.sticky-table-filters-css')
+            )
+            ->renderHook(
                 PanelsRenderHook::SIDEBAR_NAV_START,
                 fn () => view('filament.components.sidebar-header-subtitle')
             )

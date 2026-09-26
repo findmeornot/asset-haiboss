@@ -15,6 +15,8 @@ class RolePermissionSeeder extends Seeder
         $permissions = [
             // Asset
             'assets.view', 'assets.create', 'assets.update', 'assets.delete',
+            // Intake (Antrian Barang Masuk — Finance "Lengkapi Data")
+            'intake.complete',
             // Master Data
             'categories.view', 'categories.create', 'categories.update', 'categories.delete',
             'campuses.view', 'campuses.create', 'campuses.update', 'campuses.delete',
@@ -49,7 +51,7 @@ class RolePermissionSeeder extends Seeder
         // Define Roles and their specific permissions
         $roles = [
             'Superadmin' => [], // Bypass via User model
-            
+
             'Tim Inventaris' => [
                 'panel.inventory',
                 'assets.view', 'assets.create', 'assets.update',
@@ -68,6 +70,7 @@ class RolePermissionSeeder extends Seeder
             'Finance' => [
                 'panel.inventory',
                 'assets.view',
+                'intake.complete',
                 'financial.view', 'financial.export',
                 'reports.view', 'reports.export',
             ],
@@ -83,8 +86,8 @@ class RolePermissionSeeder extends Seeder
 
         foreach ($roles as $roleName => $rolePermissions) {
             $role = Role::firstOrCreate(['name' => $roleName]);
-            
-            if (!empty($rolePermissions)) {
+
+            if (! empty($rolePermissions)) {
                 $permissionIds = Permission::whereIn('name', $rolePermissions)->pluck('id');
                 $role->permissions()->sync($permissionIds);
             }
@@ -94,7 +97,7 @@ class RolePermissionSeeder extends Seeder
         $user = User::first();
         if ($user) {
             $superadminRole = Role::where('name', 'Superadmin')->first();
-            if (!$user->roles()->where('role_id', $superadminRole->id)->exists()) {
+            if (! $user->roles()->where('role_id', $superadminRole->id)->exists()) {
                 $user->roles()->attach($superadminRole->id);
             }
         }

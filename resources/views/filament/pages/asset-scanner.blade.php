@@ -290,7 +290,6 @@
 
                         <div class="mb-5">
                             <p class="text-2xl font-mono font-bold text-primary-600 dark:text-primary-500 leading-none mb-2">{{ $scannedAsset->inventory_number }}</p>
-                            <p class="text-base font-bold text-gray-900 dark:text-white">{{ $scannedAsset->name }}</p>
                         </div>
 
                         <!-- TABEL INFORMASI SINGKAT -->
@@ -298,10 +297,6 @@
                             <div class="flex items-start">
                                 <span class="w-24 shrink-0 text-gray-500">Barcode</span>
                                 <span class="font-medium text-gray-900 dark:text-white">{{ $scannedAsset->barcode ?? '-' }}</span>
-                            </div>
-                            <div class="flex items-start">
-                                <span class="w-24 shrink-0 text-gray-500">Merk/Tipe</span>
-                                <span class="font-medium text-gray-900 dark:text-white">{{ $scannedAsset->brand ?? '-' }}</span>
                             </div>
                             <div class="flex items-start">
                                 <span class="w-24 shrink-0 text-gray-500">No. Seri</span>
@@ -325,10 +320,10 @@
                             </div>
                         </div>
 
-                        <!-- UPLOAD FOTO SECTION -->
-                        <form wire:submit="savePhotos" class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Upload Foto Fisik</h3>
-                            
+                        <!-- EDIT DETAIL & UPLOAD FOTO SECTION -->
+                        <form wire:submit="saveDetails" class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Edit Nama, Merk/Tipe & Foto Fisik</h3>
+
                             {{ $this->form }}
 
                             <div class="mt-4 flex gap-3">
@@ -339,7 +334,7 @@
                                     icon="heroicon-o-arrow-up-tray"
                                     class="flex-1 justify-center font-bold"
                                 >
-                                    Simpan Foto
+                                    Simpan Perubahan
                                 </x-filament::button>
                             </div>
                         </form>

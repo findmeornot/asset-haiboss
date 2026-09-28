@@ -246,6 +246,7 @@ abstract class BaseCategoryAssetResource extends Resource
             ])
             ->bulkActions([
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
+                \App\Filament\Support\PrintChecklistActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada barang di kategori ini')
             ->emptyStateDescription('Tambahkan barang baru dan pilih kategori yang sesuai.')

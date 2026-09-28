@@ -40,6 +40,7 @@ class ListUnifiedItems extends ListRecords
     {
         return [ \Filament\Actions\ActionGroup::make([
             \App\Filament\Support\PrintBarcodeActions::byLocationHeaderAction(),
+            \App\Filament\Support\PrintChecklistActions::byLocationHeaderAction(),
 
             // ── Import Asset ──────────────────────────────────────
             Action::make('importAsset')

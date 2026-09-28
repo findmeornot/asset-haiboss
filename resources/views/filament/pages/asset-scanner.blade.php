@@ -303,14 +303,6 @@
                                 <span class="font-medium text-gray-900 dark:text-white">{{ $scannedAsset->serial_number ?? '-' }}</span>
                             </div>
                             <div class="flex items-start">
-                                <span class="w-24 shrink-0 text-gray-500">Status</span>
-                                <span class="font-medium text-gray-900 dark:text-white">
-                                    <x-filament::badge color="primary">
-                                        {{ \Illuminate\Support\Str::headline($scannedAsset->status) }}
-                                    </x-filament::badge>
-                                </span>
-                            </div>
-                            <div class="flex items-start">
                                 <span class="w-24 shrink-0 text-gray-500">Lokasi</span>
                                 <span class="font-medium text-gray-900 dark:text-white">{!! $scannedAsset->campus ? $scannedAsset->campus->name . ' &rarr; ' : '' !!}{{ $scannedAsset->location?->name ?? '-' }}</span>
                             </div>
@@ -322,7 +314,7 @@
 
                         <!-- EDIT DETAIL & UPLOAD FOTO SECTION -->
                         <form wire:submit="saveDetails" class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Edit Nama, Merk/Tipe & Foto Fisik</h3>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Edit Detail & Foto Fisik</h3>
 
                             {{ $this->form }}
 

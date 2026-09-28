@@ -63,6 +63,45 @@ class AssetScanner extends Page implements HasForms
                     ->label('Merk/Tipe')
                     ->maxLength(255),
 
+                Components\Select::make('category_id')
+                    ->label('Kategori')
+                    ->options(fn () => \App\Models\Category::whereHas(
+                        'classifications',
+                        fn ($q) => $q->whereKey($this->scannedAsset?->classification_id)
+                    )->pluck('name', 'id'))
+                    ->searchable()
+                    ->required()
+                    ->disabled(fn () => $this->scannedAsset?->status === 'baru_dilaporkan'),
+
+                Components\Select::make('status')
+                    ->label('Status')
+                    ->options([
+                        'stock'               => 'Stok (Gudang)',
+                        'active'              => 'Aktif / Digunakan',
+                        'borrowed'            => 'Dipinjam',
+                        'maintenance'         => 'Dalam Perbaikan',
+                        'lost'                => 'Hilang',
+                        'sold'                => 'Terjual',
+                        'disposed'            => 'Dihapuskan / Musnah',
+                        'baru_dilaporkan'     => 'Baru',
+                        'menunggu_pengecekan' => 'Menunggu Pengecekan',
+                    ])
+                    ->required()
+                    ->native(false)
+                    ->disabled(fn () => $this->scannedAsset?->status === 'baru_dilaporkan'),
+
+                Components\Select::make('kondisi')
+                    ->label('Kondisi')
+                    ->options([
+                        'good'         => 'Baik',
+                        'minor_damage' => 'Rusak Ringan',
+                        'major_damage' => 'Rusak Berat',
+                        'unchecked'    => 'Belum Dicek',
+                    ])
+                    ->required()
+                    ->native(false)
+                    ->disabled(fn () => $this->scannedAsset?->status === 'baru_dilaporkan'),
+
                 Components\FileUpload::make('asset_photos')
                     ->disk('s3')
                     ->label('Upload Foto (Maks 3)')
@@ -96,6 +135,9 @@ class AssetScanner extends Page implements HasForms
         $record->update([
             'name' => $state['name'],
             'brand' => $state['brand'],
+            'category_id' => $state['category_id'],
+            'status' => $state['status'],
+            'kondisi' => $state['kondisi'],
         ]);
 
         $existingPaths = $record->photos->pluck('file_path')->toArray();
@@ -161,6 +203,9 @@ class AssetScanner extends Page implements HasForms
             $this->form->fill([
                 'name' => $asset->name,
                 'brand' => $asset->brand,
+                'category_id' => $asset->category_id,
+                'status' => $asset->status,
+                'kondisi' => $asset->kondisi,
                 'asset_photos' => $asset->photos->sortBy('sort_order')->pluck('file_path')->toArray(),
             ]);
 

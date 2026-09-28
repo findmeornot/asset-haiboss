@@ -1,8 +1,11 @@
 <div class="flex items-center gap-x-2">
-    @if (\Illuminate\Support\Facades\Route::has('filament.inventory.pages.asset-scanner') && auth()->user()?->hasPermissionTo('asset_scanner.use'))
+    @php
+        $scannerRouteName = 'filament.' . (\Filament\Facades\Filament::getCurrentPanel()?->getId() ?? 'inventory') . '.pages.asset-scanner';
+    @endphp
+    @if (\Illuminate\Support\Facades\Route::has($scannerRouteName) && auth()->user()?->hasPermissionTo('asset_scanner.use'))
         {{-- Shortcut ke Scanner Aset --}}
         <a
-            href="{{ route('filament.inventory.pages.asset-scanner') }}"
+            href="{{ route($scannerRouteName) }}"
             class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-primary-600 bg-primary-50 border border-primary-200/80 rounded-lg hover:bg-primary-100 hover:border-primary-300 dark:bg-gray-800 dark:text-primary-400 dark:border-gray-700 dark:hover:bg-gray-700 transition-all focus:outline-none"
             title="Scanner Aset"
         >

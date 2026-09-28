@@ -769,6 +769,7 @@ class AssetResource extends Resource
                     \Filament\Actions\RestoreBulkAction::make(),
                 ]),
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
+                \App\Filament\Support\PrintChecklistActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada Barang/Aset')
             ->emptyStateDescription('Mulai kelola inventaris Anda dengan menambahkan barang baru.');

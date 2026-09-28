@@ -54,6 +54,15 @@ class AssetScanner extends Page implements HasForms
     {
         return $form
             ->schema([
+                Components\TextInput::make('name')
+                    ->label('Nama Barang')
+                    ->required()
+                    ->maxLength(255),
+
+                Components\TextInput::make('brand')
+                    ->label('Merk/Tipe')
+                    ->maxLength(255),
+
                 Components\FileUpload::make('asset_photos')
                     ->disk('s3')
                     ->label('Upload Foto (Maks 3)')
@@ -67,14 +76,15 @@ class AssetScanner extends Page implements HasForms
                     ->maxSize(5120) // 5MB limit
                     ->directory('asset-photos')
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                    ->helperText('Dukungan format: JPG, PNG, WebP (Maks 5MB per file). Anda dapat memilih beberapa foto dari galeri atau kamera.')
+                    ->helperText('Dukungan format: JPG, PNG, WebP (Maks 5MB per file). Foto diambil langsung dari kamera.')
                     ->panelLayout('grid')
                     ->appendFiles()
+                    ->extraInputAttributes(['capture' => 'environment'])
             ])
             ->statePath('data');
     }
 
-    public function savePhotos()
+    public function saveDetails()
     {
         if (!$this->scannedAsset) {
             return;
@@ -82,6 +92,11 @@ class AssetScanner extends Page implements HasForms
 
         $state = $this->form->getState();
         $record = $this->scannedAsset;
+
+        $record->update([
+            'name' => $state['name'],
+            'brand' => $state['brand'],
+        ]);
 
         $existingPaths = $record->photos->pluck('file_path')->toArray();
         $newPaths = array_values($state['asset_photos'] ?? []);
@@ -107,12 +122,12 @@ class AssetScanner extends Page implements HasForms
         }
 
         Notification::make()
-            ->title('Foto Berhasil Disimpan')
+            ->title('Perubahan Berhasil Disimpan')
             ->success()
             ->send();
-            
+
         // Refresh scanned asset relationships
-        $this->scannedAsset->load('photos');
+        $this->scannedAsset->refresh()->load('photos');
     }
 
     public function handleScanResult($barcode)
@@ -142,8 +157,10 @@ class AssetScanner extends Page implements HasForms
             $this->scannedAsset = $asset;
             $this->scanError = null;
             
-            // Populate form state with existing photos
+            // Populate form state with existing details & photos
             $this->form->fill([
+                'name' => $asset->name,
+                'brand' => $asset->brand,
                 'asset_photos' => $asset->photos->sortBy('sort_order')->pluck('file_path')->toArray(),
             ]);
 

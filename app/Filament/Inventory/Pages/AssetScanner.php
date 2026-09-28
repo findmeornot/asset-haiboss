@@ -122,7 +122,10 @@ class AssetScanner extends Page implements HasForms
             return;
         }
 
-        $asset = Asset::with(['category', 'location', 'pic', 'photos'])->withTrashed()->where('barcode', $barcode)->first();
+        $asset = Asset::with(['category', 'location', 'pic', 'photos'])
+            ->withTrashed()
+            ->where(fn ($q) => $q->where('barcode', $barcode)->orWhere('inventory_number', $barcode))
+            ->first();
 
         if ($asset) {
             if ($asset->trashed()) {

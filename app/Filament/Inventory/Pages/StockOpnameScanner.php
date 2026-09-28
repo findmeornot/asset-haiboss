@@ -66,7 +66,9 @@ class StockOpnameScanner extends Page
         $this->savedItem = null;
         $this->alreadyVerifiedItem = null;
 
-        $asset = Asset::withTrashed()->where('inventory_number', $inventoryNumber)->first();
+        $asset = Asset::withTrashed()
+            ->where(fn ($q) => $q->where('barcode', $inventoryNumber)->orWhere('inventory_number', $inventoryNumber))
+            ->first();
 
         if ($asset) {
             if ($asset->trashed()) {

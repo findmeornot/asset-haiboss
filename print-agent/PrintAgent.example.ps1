@@ -1,4 +1,9 @@
-# PrintAgent.ps1
+# PrintAgent.example.ps1
+#
+# TEMPLATE -- copy file ini jadi "PrintAgent.ps1" di sebelahnya (nama itu
+# sudah di-.gitignore, jadi aman diisi token/URL asli), lalu isi bagian
+# CONFIG di bawah. JANGAN edit isi CONFIG di file .example ini dan JANGAN
+# commit PrintAgent.ps1 yang sudah berisi token asli.
 #
 # Polling agent buat printer TSC TE210 (USB, driver Seagull) yang jalan di
 # PC tempat printer nempel. Web Laravel (Haiboss) bisa diakses dari PC mana
@@ -34,12 +39,18 @@
 # ============================== CONFIG ==============================
 $LaravelBaseUrl = "https://haiboss.example.com/api/v1"  # <-- ganti sesuai domain WMS, TANPA trailing slash
 $StationKey     = "gudang-1"                             # <-- harus sama persis dgn station_key pas `printer:create-station`
-$ApiToken       = "RXy62XTBseG66KrXNpvB5fGwI37qx6jE19YHvhlZaV3o86ECMTmzJCsrdQ4vtNlH"
+$ApiToken       = "GANTI_DENGAN_TOKEN_DARI_ARTISAN_COMMAND"
 $PrinterName    = "TSC TE210"                             # <-- harus persis sama dgn nama di Devices and Printers
 
 $PollIntervalSeconds      = 2
 $HeartbeatIntervalSeconds = 30
 # ======================================================================
+
+# Windows PowerShell 5.1 default-nya gak aktifin TLS 1.2 buat request HTTPS --
+# tanpa ini, Invoke-RestMethod ke domain https:// (bukan http://localhost)
+# gagal connect diam-diam (SSL/TLS secure channel error). WAJIB ada SEBELUM
+# request HTTP pertama.
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $Headers = @{ Authorization = "Bearer $ApiToken" }
 

@@ -49,6 +49,11 @@ class CategoryResource extends Resource
                             ->label('Kode Kategori')
                             ->unique(ignoreRecord: true)
                             ->maxLength(255),
+                        Components\Select::make('type')
+                            ->label('Klasifikasi')
+                            ->options(Category::TYPES)
+                            ->required()
+                            ->default('asset'),
 
                         Components\TextInput::make('useful_life')
                             ->label('Masa Manfaat (Tahun)')
@@ -76,6 +81,10 @@ class CategoryResource extends Resource
                 Tables\Columns\TextColumn::make('code')
                     ->label('Kode')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Klasifikasi')
+                    ->formatStateUsing(fn (string $state): string => Category::TYPES[$state] ?? $state)
+                    ->badge(),
 
                 Tables\Columns\IconColumn::make('active')
                     ->label('Aktif')

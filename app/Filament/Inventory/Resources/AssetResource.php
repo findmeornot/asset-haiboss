@@ -37,7 +37,7 @@ class AssetResource extends Resource
     {
         if (in_array($record->status, ['baru_dilaporkan', 'menunggu_pengecekan'], true)
             && ! Auth::user()->hasPermissionTo('intake.complete')) {
-            return Response::deny('Barang ini masih dalam antrian intake dan hanya dapat dilengkapi lewat menu Antrian Barang Masuk.');
+            return Response::deny('Barang ini masih dalam antrian intake dan hanya dapat dilengkapi lewat menu Barang Masuk.');
         }
 
         return Auth::user()->hasPermissionTo('assets.update')

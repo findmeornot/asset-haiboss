@@ -85,6 +85,7 @@ class BarangMasukController extends Controller
      * Query params:
      * - search: cari di keterangan, name
      * - status, campus_id, location_id: filter relasi (ulid) / exact
+     * - scope: `unit` = ikutkan unit hasil invoice (intake_parent_id), untuk antrean penempatan
      * - per_page: default 15, max 100
      */
     public function index(Request $request): JsonResponse
@@ -92,9 +93,16 @@ class BarangMasukController extends Controller
         $perPage = (int) $request->integer('per_page', 15);
         $perPage = max(1, min($perPage, 100));
 
-        $query = Asset::query()
-            ->whereNotNull('reported_by')
-            ->with(['campus', 'location', 'reportedBy']);
+        $query = Asset::query()->with(['campus', 'location', 'reportedBy']);
+
+        // Satu laporan (resi) bisa menghasilkan banyak unit dari invoice Finance
+        // (lihat LengkapiBarangMasuk). `scope=unit` untuk antrean penempatan:
+        // laporan + semua unit turunannya. Default: 1 row per laporan.
+        if ($request->string('scope')->value() === 'unit') {
+            $query->where(fn ($q) => $q->whereNotNull('reported_by')->orWhereNotNull('intake_parent_id'));
+        } else {
+            $query->whereNotNull('reported_by');
+        }
 
         if ($search = $request->string('search')->trim()->value()) {
             $query->where(function ($q) use ($search) {
@@ -226,7 +234,9 @@ class BarangMasukController extends Controller
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],
             'location_confirmed' => ['sometimes', 'boolean'],
             'serial_number' => ['nullable', 'string', 'max:255', Rule::unique('assets', 'serial_number')->ignore($barangMasuk->id)->whereNull('deleted_at')],
-            'status' => ['sometimes', 'string', 'in:baru_dilaporkan,menunggu_pengecekan,stock'],
+            // `menunggu_pengecekan` hanya lewat wizard invoice Finance (LengkapiBarangMasuk),
+            // supaya jumlah unit mengikuti invoice. `stock` lewat complete().
+            'status' => ['sometimes', 'string', 'in:baru_dilaporkan'],
         ]);
 
         if ($validator->fails()) {
@@ -251,6 +261,45 @@ class BarangMasukController extends Controller
 
         return response()->json([
             'message' => 'Laporan barang datang berhasil diperbarui.',
+            'data' => $this->serialize($barangMasuk),
+        ]);
+    }
+
+    /**
+     * Ganti foto resi laporan (OB salah foto / foto buram). File lama dihapus
+     * setelah file baru tersimpan & tercatat.
+     */
+    public function replaceFotoResi(Request $request, Asset $barangMasuk): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'foto_resi' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:5120'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Data tidak valid.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // Disk default (S3), sama dengan store(), supaya tampil di panel Filament.
+        $disk = config('filesystems.default');
+        $file = $request->file('foto_resi');
+        $path = $file->storeAs('barang-masuk', Str::random(20) . '.' . $file->extension(), $disk);
+
+        $oldPath = $barangMasuk->foto_resi;
+        $barangMasuk->update(['foto_resi' => $path]);
+
+        // Upload lama bisa di disk `public` (lihat fileUrl()), hapus dari keduanya.
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+            Storage::disk($disk)->delete($oldPath);
+        }
+
+        $barangMasuk->load(['campus', 'location', 'reportedBy']);
+
+        return response()->json([
+            'message' => 'Foto resi berhasil diganti.',
             'data' => $this->serialize($barangMasuk),
         ]);
     }

@@ -13,7 +13,6 @@ class HeaderValidator
      */
     public const REQUIRED_HEADERS = [
         'No',
-        'Kode',
         'Kategori Akuntansi',
         'Kategori',
         'Nama Barang',

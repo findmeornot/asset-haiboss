@@ -86,4 +86,16 @@ class Asset extends Model {
     public function statusHistories(): HasMany { return $this->hasMany(AssetStatusHistory::class); }
     public function locationHistories(): HasMany { return $this->hasMany(AssetLocationHistory::class); }
     public function priceHistories(): HasMany { return $this->hasMany(AssetPriceHistory::class); }
+
+    /**
+     * Format "{campus.name} - {location.name}" dipakai di label barcode
+     * (baik preview SVG di web maupun TSPL2 print-agent), biar konsisten.
+     */
+    public function printLocationLabel(): string
+    {
+        return implode(' - ', array_filter([
+            $this->campus?->name,
+            $this->location?->name,
+        ]));
+    }
 }

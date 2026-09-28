@@ -657,22 +657,7 @@ class AssetResource extends Resource
             ])
             ->actions([
                 \Filament\Actions\ActionGroup::make([
-                    \Filament\Actions\Action::make('printLabel')
-                        ->label('Cetak Barcode')
-                        ->icon('heroicon-o-bars-4')
-                        ->color('success')
-                        ->modalHeading('Preview Label Aset')
-                        ->modalContent(fn (Asset $record) => view('filament.components.asset-label-preview', ['record' => $record]))
-                        ->modalSubmitAction(false)
-                        ->modalCancelActionLabel('Tutup')
-                        ->extraModalFooterActions([
-                            \Filament\Actions\Action::make('print')
-                                ->label('Print Sekarang')
-                                ->color('primary')
-                                ->icon('heroicon-o-printer')
-                                ->url(fn (Asset $record) => route('asset.label.print', $record->id))
-                                ->openUrlInNewTab(),
-                        ]),
+                    \App\Filament\Support\PrintBarcodeActions::rowAction(),
                     \Filament\Actions\Action::make('changeStatus')
                         ->label('Ubah Status/Kondisi')
                         ->icon('heroicon-o-arrow-path')
@@ -783,6 +768,7 @@ class AssetResource extends Resource
                     \Filament\Actions\ForceDeleteBulkAction::make(),
                     \Filament\Actions\RestoreBulkAction::make(),
                 ]),
+                \App\Filament\Support\PrintBarcodeActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada Barang/Aset')
             ->emptyStateDescription('Mulai kelola inventaris Anda dengan menambahkan barang baru.');

@@ -74,6 +74,21 @@ class ValueNormalizer
     }
 
     /**
+     * Normalisasi key sebelum lookup ke OWNERSHIP_MAP/STATUS_MAP/KONDISI_MAP.
+     * Beberapa value map mengandung "/" dengan spasi di kedua sisinya
+     * (mis. "aktif / digunakan") — tanpa ini, cell yang ditulis tanpa spasi
+     * ("Aktif/Digunakan", umum kalau di-copy dari sumber lain) gagal match
+     * padahal secara makna sama.
+     */
+    public static function normalizeMapKey(string $raw): string
+    {
+        $key = mb_strtolower(trim($raw));
+        $key = preg_replace('/\s*\/\s*/', ' / ', $key);
+
+        return preg_replace('/\s+/', ' ', $key);
+    }
+
+    /**
      * Parse date string into Y-m-d format.
      * Supports:
      * - YYYY (e.g. 2026) -> 2026-01-01
@@ -96,17 +111,45 @@ class ValueNormalizer
     }
 
     /**
-     * Normalisasi string Harga Perolehan (hapus "Rp", pemisah ribuan, ganti
-     * koma desimal) menjadi float. Return null kalau bukan angka yang valid —
-     * pemanggil yang menentukan arti null itu (error vs "tidak diketahui").
+     * Normalisasi string Harga Perolehan (hapus "Rp", pemisah ribuan) menjadi
+     * float. Mendukung format Indonesia (titik ribuan, koma desimal, mis.
+     * "8.500.000,50") maupun format lain yang sering ke-copy dari sumber
+     * asing/Excel (koma ribuan, titik desimal, mis. "Rp5,100,000"). Return
+     * null kalau bukan angka yang valid — pemanggil yang menentukan arti
+     * null itu (error vs "tidak diketahui").
      */
     public static function parseCurrency(string $rawHarga): ?float
     {
-        $norm = preg_replace('/[Rp\s]/u', '', $rawHarga);
-        // Heuristik: jika ada titik dan diikuti 3 digit lalu akhir/titik lagi → ribuan
-        $norm = preg_replace('/\.(?=\d{3}(?:[,.]|$))/', '', $norm);
-        // Ganti koma desimal dengan titik
-        $norm = str_replace(',', '.', $norm);
+        $norm = trim(preg_replace('/[Rp\s]/ui', '', $rawHarga));
+
+        if ($norm === '') {
+            return null;
+        }
+
+        $hasComma = str_contains($norm, ',');
+        $hasDot   = str_contains($norm, '.');
+
+        if ($hasComma && $hasDot) {
+            // Separator terakhir (paling kanan) adalah desimal, sisanya ribuan.
+            if (strrpos($norm, ',') > strrpos($norm, '.')) {
+                $norm = str_replace('.', '', $norm);
+                $norm = str_replace(',', '.', $norm);
+            } else {
+                $norm = str_replace(',', '', $norm);
+            }
+        } elseif ($hasComma) {
+            // Cuma koma: anggap ribuan kalau polanya grup 3 digit (mis. "5,100,000"),
+            // selain itu anggap koma desimal (mis. "5,5").
+            $norm = preg_match('/^\d{1,3}(,\d{3})+$/', $norm)
+                ? str_replace(',', '', $norm)
+                : str_replace(',', '.', $norm);
+        } elseif ($hasDot) {
+            // Cuma titik: anggap ribuan kalau polanya grup 3 digit (mis. "8.500.000"),
+            // selain itu biarkan sebagai desimal.
+            if (preg_match('/^\d{1,3}(\.\d{3})+$/', $norm)) {
+                $norm = str_replace('.', '', $norm);
+            }
+        }
 
         if (!is_numeric($norm)) {
             return null;

@@ -223,7 +223,7 @@ class UnifiedItemResource extends Resource
                     })
             ])
             ->bulkActions([
-                //
+                \App\Filament\Support\PrintBarcodeActions::bulkAction(),
             ]);
     }
 

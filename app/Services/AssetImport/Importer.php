@@ -101,9 +101,9 @@ class Importer
                 }
             }
 
-            $ownershipVal = ValueNormalizer::OWNERSHIP_MAP[mb_strtolower(trim($row['Sumber Dana'] ?? ''))] ?? 'company';
-            $statusVal    = ValueNormalizer::STATUS_MAP[mb_strtolower(trim($row['Status'] ?? ''))] ?? 'stock';
-            $kondisiVal   = ValueNormalizer::KONDISI_MAP[mb_strtolower(trim($row['Kondisi'] ?? ''))] ?? 'good';
+            $ownershipVal = ValueNormalizer::OWNERSHIP_MAP[ValueNormalizer::normalizeMapKey($row['Sumber Dana'] ?? '')] ?? 'company';
+            $statusVal    = ValueNormalizer::STATUS_MAP[ValueNormalizer::normalizeMapKey($row['Status'] ?? '')] ?? 'stock';
+            $kondisiVal   = ValueNormalizer::KONDISI_MAP[ValueNormalizer::normalizeMapKey($row['Kondisi'] ?? '')] ?? 'good';
 
             // Tahun perolehan → purchase_date: null jika kosong/strip (tidak diketahui)
             $tahunRaw     = trim((string) ($row['Tahun Perolehan'] ?? ''));

@@ -90,7 +90,11 @@ class RowValidator
             }
 
             // ──────────────────────────────────────────
-            // 3. Kategori (category_id) — wajib, jika belum ada akan dibuat otomatis
+            // 3. Kategori (category_id) — wajib. Satu nama Kategori boleh dipakai
+            //    di lebih dari satu Kategori Akuntansi (mis. "Furniture" ada baik
+            //    di Aset maupun Inventaris) — kalau kategori sudah ada tapi belum
+            //    ter-link ke Kategori Akuntansi baris ini, Importer yang akan
+            //    otomatis nge-link-nya (syncWithoutDetaching), bukan error di sini.
             // ──────────────────────────────────────────
             $categoryName = trim($row['Kategori'] ?? '');
             $category     = null;
@@ -98,14 +102,9 @@ class RowValidator
                 $rowErrors[] = ['field' => 'Kategori', 'message' => 'Kategori tidak boleh kosong.'];
             } else {
                 $category = $categories->get(mb_strtolower($categoryName));
-                if ($category && $classification) {
-                    // Hanya validasi linkage jika kategori sudah ada di sistem
-                    $linked = $category->classifications()->whereKey($classification->id)->exists();
-                    if (!$linked) {
-                        $rowErrors[] = ['field' => 'Kategori', 'message' => "Kategori \"{$categoryName}\" tidak termasuk dalam Kategori Akuntansi \"{$classificationName}\"."];
-                    }
-                }
-                // Jika belum ada sama sekali → akan dibuat otomatis saat import, tidak error
+                // Kategori sudah ada atau belum, keduanya valid: kalau belum ada
+                // akan dibuat otomatis saat import, kalau sudah ada tapi belum
+                // masuk Kategori Akuntansi ini akan otomatis di-link.
             }
 
             // ──────────────────────────────────────────
@@ -161,7 +160,7 @@ class RowValidator
             if (empty($sumberDanaRaw)) {
                 $rowErrors[] = ['field' => 'Sumber Dana', 'message' => 'Sumber Dana tidak boleh kosong.'];
             } else {
-                $ownershipVal = ValueNormalizer::OWNERSHIP_MAP[mb_strtolower($sumberDanaRaw)] ?? null;
+                $ownershipVal = ValueNormalizer::OWNERSHIP_MAP[ValueNormalizer::normalizeMapKey($sumberDanaRaw)] ?? null;
                 if (!$ownershipVal) {
                     $validOptions = 'Yayasan, Hibah, Pinjaman';
                     $rowErrors[]  = ['field' => 'Sumber Dana', 'message' => "Sumber Dana \"{$sumberDanaRaw}\" tidak valid. Gunakan: {$validOptions}."];
@@ -219,7 +218,7 @@ class RowValidator
             if (empty($statusRaw)) {
                 $rowErrors[] = ['field' => 'Status', 'message' => 'Status tidak boleh kosong.'];
             } else {
-                if (!isset(ValueNormalizer::STATUS_MAP[mb_strtolower($statusRaw)])) {
+                if (!isset(ValueNormalizer::STATUS_MAP[ValueNormalizer::normalizeMapKey($statusRaw)])) {
                     $validStatus = implode(', ', array_unique(array_keys(ValueNormalizer::STATUS_MAP)));
                     $rowErrors[]  = ['field' => 'Status', 'message' => "Status \"{$statusRaw}\" tidak valid. Gunakan salah satu dari: {$validStatus}."];
                 }
@@ -232,7 +231,7 @@ class RowValidator
             if (empty($kondisiRaw)) {
                 $rowErrors[] = ['field' => 'Kondisi', 'message' => 'Kondisi tidak boleh kosong.'];
             } else {
-                if (!isset(ValueNormalizer::KONDISI_MAP[mb_strtolower($kondisiRaw)])) {
+                if (!isset(ValueNormalizer::KONDISI_MAP[ValueNormalizer::normalizeMapKey($kondisiRaw)])) {
                     $validKondisi = implode(', ', array_unique(array_keys(ValueNormalizer::KONDISI_MAP)));
                     $rowErrors[]  = ['field' => 'Kondisi', 'message' => "Kondisi \"{$kondisiRaw}\" tidak valid. Gunakan salah satu dari: {$validKondisi}."];
                 }

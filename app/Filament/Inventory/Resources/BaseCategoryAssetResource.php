@@ -142,8 +142,8 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('purchaseItem.unit_price')
-                    ->label('Harga Perolehan (per unit)
-                    ->toggleable()')
+                    ->label('Harga Perolehan (per unit)')
+                    ->toggleable()
                     ->money('idr')
                     ->visible(fn () => Auth::user()->hasPermissionTo('financial.view'))
                     ->sortable()
@@ -236,6 +236,16 @@ abstract class BaseCategoryAssetResource extends Resource
             ->actions([
                 \Filament\Actions\ViewAction::make()
                     ->hiddenLabel(),
+                \Filament\Actions\Action::make('editFull')
+                    ->label('Edit')
+                    ->hiddenLabel()
+                    ->icon('heroicon-o-pencil-square')
+                    ->url(fn ($record) => AssetResource::getUrl('edit', ['record' => $record]))
+                    ->visible(fn ($record) => Auth::user()->can('update', $record)),
+                \App\Filament\Support\PrintBarcodeActions::rowAction(),
+            ])
+            ->bulkActions([
+                \App\Filament\Support\PrintBarcodeActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada barang di kategori ini')
             ->emptyStateDescription('Tambahkan barang baru dan pilih kategori yang sesuai.')

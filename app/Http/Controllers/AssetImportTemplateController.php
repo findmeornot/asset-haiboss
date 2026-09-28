@@ -26,20 +26,20 @@ class AssetImportTemplateController extends Controller
             'Jumlah',
             'Satuan',
             'Tahun Perolehan',
+            'Harga Perolehan',
             'Sumber Dana',
             'Gedung',
             'Ruangan',
             'PIC',
-            'Status',
             'Kondisi',
-            'Harga Perolehan',
+            'Status',
             'Keterangan',
         ];
 
         $exampleRow = [
             '1',
-            'INV-000001',
-            'Peralatan Praktikum',
+            '', // Kode dikosongkan: aset baru selalu auto-generate, jangan diisi manual.
+            'Aset',
             'Komputer',
             'Laptop',
             'Lenovo ThinkPad X1',
@@ -47,13 +47,13 @@ class AssetImportTemplateController extends Controller
             '1',
             'Unit',
             '2024',
+            '8500000',
             'Yayasan',
             'Gedung Rektorat',
             'Ruang B1',
             'John Doe',
-            'Aktif / Digunakan',
             'Baik',
-            '8500000',
+            'Aktif / Digunakan',
             'Laptop untuk laboratorium komputer',
         ];
 

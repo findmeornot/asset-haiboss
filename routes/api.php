@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Agent\PrintJobController as AgentPrintJobController;
+use App\Http\Controllers\Agent\StationController as AgentStationController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BarangMasukController;
@@ -7,6 +9,7 @@ use App\Http\Controllers\Api\CampusController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\PrintJobController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -48,5 +51,17 @@ Route::prefix('v1')->group(function () {
         Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('api.notifications.read');
         Route::delete('/notifications', [NotificationController::class, 'clear'])->name('api.notifications.clear');
         Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('api.notifications.destroy');
+
+        // Print label barcode: web bikin job, agent di PC printer yang eksekusi (lihat grup 'agent' di bawah).
+        Route::post('/print-jobs', [PrintJobController::class, 'store'])->name('api.print-jobs.store');
+        Route::get('/print-jobs/status', [PrintJobController::class, 'status'])->name('api.print-jobs.status');
+    });
+
+    // Dipanggil agent PowerShell di PC printer, bukan browser — auth pakai token station (bukan sesi user).
+    Route::middleware('printer.agent')->prefix('agent')->group(function () {
+        Route::get('/print-jobs/pending', [AgentPrintJobController::class, 'pending'])->name('api.agent.print-jobs.pending');
+        Route::post('/print-jobs/{printJob}/complete', [AgentPrintJobController::class, 'complete'])->name('api.agent.print-jobs.complete');
+        Route::post('/print-jobs/{printJob}/fail', [AgentPrintJobController::class, 'fail'])->name('api.agent.print-jobs.fail');
+        Route::post('/stations/heartbeat', [AgentStationController::class, 'heartbeat'])->name('api.agent.stations.heartbeat');
     });
 });

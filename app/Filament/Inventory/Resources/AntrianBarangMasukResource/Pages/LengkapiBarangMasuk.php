@@ -2,6 +2,7 @@
 
 namespace App\Filament\Inventory\Resources\AntrianBarangMasukResource\Pages;
 
+use App\Filament\Forms\Components\TabbedRepeater;
 use App\Filament\Inventory\Resources\AntrianBarangMasukResource;
 use App\Models\Asset;
 use App\Models\Campus;
@@ -18,6 +19,7 @@ use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Actions as SchemaActions;
 use Filament\Schemas\Components\Wizard\Step;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -124,12 +126,12 @@ class LengkapiBarangMasuk extends EditRecord
                 ->description('Isi sesuai invoice, satu baris per jenis barang.')
                 ->afterValidation(fn (callable $get, callable $set) => $this->syncPlacements($get, $set))
                 ->schema([
-                    Components\Repeater::make('items')
+                    TabbedRepeater::make('items')
                         ->hiddenLabel()
                         ->addActionLabel('Tambah Barang')
+                        ->addAction(fn (Actions\Action $action) => $action->icon(Heroicon::Plus))
                         ->minItems(1)
                         ->reorderable(false)
-                        ->collapsible()
                         ->itemLabel(fn (array $state): ?string => filled($state['name'] ?? null)
                             ? $state['name'].' ('.max(1, (int) ($state['quantity'] ?? 1)).' '.(($state['unit'] ?? null) ?: 'unit').')'
                             : 'Barang baru')

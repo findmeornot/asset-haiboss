@@ -225,6 +225,7 @@ class UnifiedItemResource extends Resource
             ->bulkActions([
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
                 \App\Filament\Support\PrintChecklistActions::bulkAction(),
+                \App\Filament\Support\MoveLocationActions::bulkAction(),
             ]);
     }
 

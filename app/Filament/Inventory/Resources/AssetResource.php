@@ -657,6 +657,7 @@ class AssetResource extends Resource
             ])
             ->actions([
                 \Filament\Actions\ActionGroup::make([
+                    \App\Filament\Support\PrintBarcodeActions::viewAction(),
                     \App\Filament\Support\PrintBarcodeActions::rowAction(),
                     \Filament\Actions\Action::make('changeStatus')
                         ->label('Ubah Status/Kondisi')
@@ -770,6 +771,7 @@ class AssetResource extends Resource
                 ]),
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
                 \App\Filament\Support\PrintChecklistActions::bulkAction(),
+                \App\Filament\Support\MoveLocationActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada Barang/Aset')
             ->emptyStateDescription('Mulai kelola inventaris Anda dengan menambahkan barang baru.');

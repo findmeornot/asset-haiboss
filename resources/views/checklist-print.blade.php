@@ -33,9 +33,9 @@
         <thead>
             <tr>
                 <th class="col-no">No</th>
-                <th>Nama Barang</th>
                 <th>Kode Inventaris</th>
-                <th>Kategori</th>
+                <th>Nama Barang</th>
+                <th>Merk/Type</th>
                 <th>PIC</th>
                 <th class="col-check">Ada</th>
                 <th class="col-note">Keterangan</th>
@@ -45,9 +45,9 @@
             @foreach($assets as $index => $asset)
             <tr>
                 <td class="col-no">{{ $index + 1 }}</td>
-                <td>{{ $asset->name }}</td>
                 <td>{{ $asset->inventory_number }}</td>
-                <td>{{ $asset->category?->name }}</td>
+                <td>{{ $asset->name }}</td>
+                <td>{{ $asset->brand }}</td>
                 <td>{{ $asset->pic?->name }}</td>
                 <td class="col-check"><span class="check-box"></span></td>
                 <td class="col-note"></td>

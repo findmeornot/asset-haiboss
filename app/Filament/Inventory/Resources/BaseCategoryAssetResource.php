@@ -242,11 +242,13 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->icon('heroicon-o-pencil-square')
                     ->url(fn ($record) => AssetResource::getUrl('edit', ['record' => $record]))
                     ->visible(fn ($record) => Auth::user()->can('update', $record)),
+                \App\Filament\Support\PrintBarcodeActions::viewAction()->hiddenLabel(),
                 \App\Filament\Support\PrintBarcodeActions::rowAction(),
             ])
             ->bulkActions([
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
                 \App\Filament\Support\PrintChecklistActions::bulkAction(),
+                \App\Filament\Support\MoveLocationActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada barang di kategori ini')
             ->emptyStateDescription('Tambahkan barang baru dan pilih kategori yang sesuai.')

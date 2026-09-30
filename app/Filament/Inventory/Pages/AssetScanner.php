@@ -102,6 +102,18 @@ class AssetScanner extends Page implements HasForms
                     ->native(false)
                     ->disabled(fn () => $this->scannedAsset?->status === 'baru_dilaporkan'),
 
+                Components\Select::make('pic_id')
+                    ->label('Penanggung Jawab (PIC)')
+                    ->options(fn () => \App\Models\Employee::pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->createOptionForm([
+                        Components\TextInput::make('name')->label('Nama Lengkap')->required(),
+                        Components\TextInput::make('employee_number')->label('Nomor Induk / NIP')->nullable(),
+                        Components\TextInput::make('department')->label('Departemen')->nullable(),
+                    ])
+                    ->createOptionUsing(fn (array $data) => \App\Models\Employee::create($data)->getKey()),
+
                 Components\FileUpload::make('asset_photos')
                     ->disk('s3')
                     ->label('Upload Foto (Maks 3)')
@@ -138,6 +150,7 @@ class AssetScanner extends Page implements HasForms
             'category_id' => $state['category_id'],
             'status' => $state['status'],
             'kondisi' => $state['kondisi'],
+            'pic_id' => $state['pic_id'],
         ]);
 
         $existingPaths = $record->photos->pluck('file_path')->toArray();
@@ -206,6 +219,7 @@ class AssetScanner extends Page implements HasForms
                 'category_id' => $asset->category_id,
                 'status' => $asset->status,
                 'kondisi' => $asset->kondisi,
+                'pic_id' => $asset->pic_id,
                 'asset_photos' => $asset->photos->sortBy('sort_order')->pluck('file_path')->toArray(),
             ]);
 

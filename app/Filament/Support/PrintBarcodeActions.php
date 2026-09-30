@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\Campus;
 use App\Models\Location;
 use App\Models\PrinterStation;
+use App\Services\BarcodeService;
 use App\Services\PrintQueueService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -33,6 +34,30 @@ class PrintBarcodeActions
             ->options(fn () => PrinterStation::orderBy('name')->pluck('name', 'station_key'))
             ->required()
             ->helperText($helperText);
+    }
+
+    /**
+     * Tombol per-baris: liat preview barcode 1 Asset dulu, tanpa langsung
+     * masuk antrian print.
+     */
+    public static function viewAction(): Action
+    {
+        return Action::make('viewBarcode')
+            ->label('Lihat Barcode')
+            ->icon('heroicon-o-qr-code')
+            ->color('gray')
+            ->visible(fn (Asset $record) => filled($record->barcode))
+            ->modalHeading(fn (Asset $record) => "Barcode - {$record->name}")
+            ->modalContent(fn (Asset $record) => new HtmlString(
+                '<div style="text-align:center;padding:8px 0;">'
+                . '<div style="font-size:13px;color:#6b7280;margin-bottom:4px;">' . e($record->printLocationLabel()) . '</div>'
+                . '<div style="font-weight:700;margin-bottom:12px;">' . e($record->name) . '</div>'
+                . '<div style="display:flex;justify-content:center;margin-bottom:8px;background:#fff;padding:12px;border-radius:8px;">' . app(BarcodeService::class)->generateSvg($record->barcode) . '</div>'
+                . '<div style="font-family:monospace;font-weight:700;">' . e($record->inventory_number) . '</div>'
+                . '</div>'
+            ))
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Tutup');
     }
 
     /**

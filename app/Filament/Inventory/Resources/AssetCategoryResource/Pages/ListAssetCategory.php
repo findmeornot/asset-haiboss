@@ -9,6 +9,7 @@ use Filament\Resources\Pages\ListRecords;
 class ListAssetCategory extends ListRecords
 {
     use HasCleanFilterUrls;
+    use \App\Filament\Support\Concerns\HasCampusLocationToolbar;
 
     protected static string $resource = AssetCategoryResource::class;
 

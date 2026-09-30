@@ -187,7 +187,6 @@ class AssetResource extends Resource
                                 ->label('Harga Satuan')
                                 ->numeric()
                                 ->prefix('Rp')
-                                ->required()
                                 ->live(onBlur: true)
                                 ->disabled(fn ($record) => $record && $record->purchaseItem && $record->purchaseItem->unit_price !== null)
                                 ->afterStateUpdated(function ($set, $get) {
@@ -253,7 +252,6 @@ class AssetResource extends Resource
                                 ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'])
                                 ->maxSize(5120) // 5MB
                                 ->directory('invoice-documents')
-                                ->required()
                                 ->columnSpanFull(),
                         ])->columnSpan(['default' => 1, 'md' => 1]),
                     ])
@@ -583,29 +581,20 @@ class AssetResource extends Resource
                     ->label('Kategori')
                     ->relationship('category', 'name'),
                 Tables\Filters\Filter::make('campus_location')
+                    // Dropdown Gedung/Ruangan dirender di toolbar tabel (lihat
+                    // AppServiceProvider); field hidden ini cuma nampung state-nya.
                     ->form([
-                        Components\Select::make('campus_id')
-                            ->label('Gedung')
-                            ->options(\App\Models\Campus::pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->live()
-                            ->afterStateUpdated(fn (callable $set) => $set('location_id', null)),
-                        Components\Select::make('location_id')
-                            ->label('Ruangan')
-                            ->options(fn (callable $get) => \App\Models\Location::when($get('campus_id'), fn($q) => $q->where('campus_id', $get('campus_id')))->pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->disabled(fn (callable $get) => blank($get('campus_id'))),
+                        \Filament\Forms\Components\Hidden::make('campus_id'),
+                        \Filament\Forms\Components\Hidden::make('location_id'),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         return $query
                             ->when(
-                                $data['campus_id'],
+                                $data['campus_id'] ?? null,
                                 fn (\Illuminate\Database\Eloquent\Builder $query, $campusId): \Illuminate\Database\Eloquent\Builder => $query->where('campus_id', $campusId),
                             )
                             ->when(
-                                $data['location_id'],
+                                $data['location_id'] ?? null,
                                 fn (\Illuminate\Database\Eloquent\Builder $query, $locationId): \Illuminate\Database\Eloquent\Builder => $query->where('location_id', $locationId),
                             );
                     })
@@ -763,6 +752,10 @@ class AssetResource extends Resource
                     \Filament\Actions\RestoreAction::make(),
                 ])
             ])
+            // Centang tetap ada saat search/filter berubah. Tautan "Pilih semua N
+            // data" dimatikan, karena tanpa filter-ulang ia bisa memilih seluruh tabel.
+            ->deselectAllRecordsWhenFiltered(false)
+            ->selectCurrentPageOnly()
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([
                     \Filament\Actions\DeleteBulkAction::make(),
@@ -772,6 +765,7 @@ class AssetResource extends Resource
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
                 \App\Filament\Support\PrintChecklistActions::bulkAction(),
                 \App\Filament\Support\MoveLocationActions::bulkAction(),
+                \App\Filament\Support\ChangeCategoryActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada Barang/Aset')
             ->emptyStateDescription('Mulai kelola inventaris Anda dengan menambahkan barang baru.');

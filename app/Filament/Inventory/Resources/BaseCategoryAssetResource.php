@@ -194,29 +194,20 @@ abstract class BaseCategoryAssetResource extends Resource
                         'major_damage'             => 'Rusak Berat',
                     ]),
                 Tables\Filters\Filter::make('campus_location')
+                    // Dropdown Gedung/Ruangan dirender di toolbar tabel (lihat
+                    // AppServiceProvider); field hidden ini cuma nampung state-nya.
                     ->form([
-                        \Filament\Forms\Components\Select::make('campus_id')
-                            ->label('Gedung')
-                            ->options(\App\Models\Campus::pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->live()
-                            ->afterStateUpdated(fn (callable $set) => $set('location_id', null)),
-                        \Filament\Forms\Components\Select::make('location_id')
-                            ->label('Ruangan (Lokasi)')
-                            ->options(fn (callable $get) => \App\Models\Location::when($get('campus_id'), fn($q) => $q->where('campus_id', $get('campus_id')))->pluck('name', 'id'))
-                            ->searchable()
-                            ->preload()
-                            ->disabled(fn (callable $get) => blank($get('campus_id'))),
+                        \Filament\Forms\Components\Hidden::make('campus_id'),
+                        \Filament\Forms\Components\Hidden::make('location_id'),
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
                         return $query
                             ->when(
-                                $data['campus_id'],
+                                $data['campus_id'] ?? null,
                                 fn (\Illuminate\Database\Eloquent\Builder $query, $campusId): \Illuminate\Database\Eloquent\Builder => $query->where('campus_id', $campusId),
                             )
                             ->when(
-                                $data['location_id'],
+                                $data['location_id'] ?? null,
                                 fn (\Illuminate\Database\Eloquent\Builder $query, $locationId): \Illuminate\Database\Eloquent\Builder => $query->where('location_id', $locationId),
                             );
                     })
@@ -245,10 +236,15 @@ abstract class BaseCategoryAssetResource extends Resource
                 \App\Filament\Support\PrintBarcodeActions::viewAction()->hiddenLabel(),
                 \App\Filament\Support\PrintBarcodeActions::rowAction(),
             ])
+            // Centang tetap ada saat search/filter berubah. Tautan "Pilih semua N
+            // data" dimatikan, karena tanpa filter-ulang ia bisa memilih seluruh tabel.
+            ->deselectAllRecordsWhenFiltered(false)
+            ->selectCurrentPageOnly()
             ->bulkActions([
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
                 \App\Filament\Support\PrintChecklistActions::bulkAction(),
                 \App\Filament\Support\MoveLocationActions::bulkAction(),
+                \App\Filament\Support\ChangeCategoryActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada barang di kategori ini')
             ->emptyStateDescription('Tambahkan barang baru dan pilih kategori yang sesuai.')

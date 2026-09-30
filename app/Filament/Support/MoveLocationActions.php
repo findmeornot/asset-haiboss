@@ -10,9 +10,7 @@ use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Collection;
-use App\Services\AuditLogger;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Bulk action "Pindah Ruangan" -- koreksi data lokasi yang salah (mis. salah
@@ -85,46 +83,14 @@ class MoveLocationActions
     }
 
     /**
-     * Semua di dalam satu transaksi dengan row lock, supaya qty yang dibaca
-     * selalu terbaru dan pembelian/mutasi yang jalan bersamaan menunggu
-     * sampai penggabungan selesai.
-     *
      * @return bool true kalau digabung ke baris yang sudah ada, false kalau cuma dipindah
      */
     protected static function moveBalance(InventoryBalance $record, array $data): bool
     {
-        return DB::transaction(function () use ($record, $data) {
-            $balance = InventoryBalance::lockForUpdate()->findOrFail($record->id);
-            $old = $balance->only(['campus_id', 'location_id', 'quantity']);
-
-            $target = InventoryBalance::query()
-                ->where('id', '!=', $balance->id)
-                ->where('category_id', $balance->category_id)
-                ->where('name', $balance->name)
-                ->where('brand', $balance->brand)
-                ->where('location_id', $data['location_id'])
-                ->lockForUpdate()
-                ->first();
-
-            if (! $target) {
-                $balance->update([
-                    'campus_id' => $data['campus_id'],
-                    'location_id' => $data['location_id'],
-                ]);
-                AuditLogger::log('location_change', $balance, $old, $balance->only(['campus_id', 'location_id', 'quantity']));
-
-                return false;
-            }
-
-            $target->increment('quantity', $balance->quantity);
-            $balance->units()->update(['inventory_balance_id' => $target->id]);
-            $balance->purchaseItems()->update(['inventory_balance_id' => $target->id]);
-            $balance->delete();
-
-            AuditLogger::log('location_change', $target, $old, ['merged_into' => $target->id, 'quantity' => $target->quantity]);
-
-            return true;
-        });
+        return InventoryBalanceMerger::apply($record, [
+            'campus_id' => $data['campus_id'],
+            'location_id' => $data['location_id'],
+        ], 'location_change');
     }
 
     /**

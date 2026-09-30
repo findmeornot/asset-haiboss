@@ -79,8 +79,9 @@ class CreateAsset extends CreateRecord
             $quantity = isset($this->purchaseData['quantity']) ? (int) $this->purchaseData['quantity'] : 1;
             if ($quantity < 1) $quantity = 1;
 
-            $unitPrice  = isset($this->purchaseData['unit_price'])  ? (float) $this->purchaseData['unit_price']  : 0;
-            $totalPrice = isset($this->purchaseData['total_price'])  ? (float) $this->purchaseData['total_price'] : ($unitPrice * $quantity);
+            // Harga boleh kosong (tidak diketahui): simpan NULL, bukan 0, supaya bisa dilengkapi belakangan.
+            $unitPrice  = filled($this->purchaseData['unit_price'] ?? null)  ? (float) $this->purchaseData['unit_price']  : null;
+            $totalPrice = filled($this->purchaseData['total_price'] ?? null) ? (float) $this->purchaseData['total_price'] : ($unitPrice !== null ? $unitPrice * $quantity : null);
             $purchaseDate = $this->purchaseData['purchase_date'] ?? null;
             $ownership    = $this->purchaseData['ownership']     ?? 'company';
             $unit         = $this->purchaseData['unit']          ?? null;

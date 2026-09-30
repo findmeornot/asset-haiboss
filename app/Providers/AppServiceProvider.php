@@ -33,6 +33,23 @@ class AppServiceProvider extends ServiceProvider
             'panels::sidebar.expand-button' => 'heroicon-o-bars-3',
             'panels::sidebar.expand-button.rtl' => 'heroicon-o-bars-3',
         ]);
+        \Filament\Tables\Table::configureUsing(
+            fn (\Filament\Tables\Table $table) => $table->paginationPageOptions([10, 25, 50, 100, 'all'])
+        );
+
+        // Dropdown Gedung/Ruangan sebaris dengan search/filter/kolom (paling kiri).
+        \Filament\Support\Facades\FilamentView::registerRenderHook(
+            \Filament\Tables\View\TablesRenderHook::TOOLBAR_START,
+            fn (): \Illuminate\Contracts\View\View => view('filament.tables.campus-location-toolbar'),
+            scopes: [
+                \App\Filament\Inventory\Resources\AssetResource\Pages\ListAssets::class,
+                \App\Filament\Inventory\Resources\UnifiedItemResource\Pages\ListUnifiedItems::class,
+                \App\Filament\Inventory\Resources\AssetCategoryResource\Pages\ListAssetCategory::class,
+                \App\Filament\Inventory\Resources\InventoryCategoryResource\Pages\ListInventoryCategory::class,
+                \App\Filament\Inventory\Resources\SupplyCategoryResource\Pages\ListSupplyCategory::class,
+            ],
+        );
+
         if (!app()->environment('local')) {
             URL::forceScheme('https');
         }

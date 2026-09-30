@@ -14,6 +14,8 @@ use Illuminate\Support\HtmlString;
 
 class ListUnifiedItems extends ListRecords
 {
+    use \App\Filament\Support\Concerns\HasCampusLocationToolbar;
+
     protected static string $resource = UnifiedItemResource::class;
 
     public function getHeading(): string | \Illuminate\Contracts\Support\Htmlable

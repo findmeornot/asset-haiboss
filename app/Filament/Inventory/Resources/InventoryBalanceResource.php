@@ -182,8 +182,13 @@ class InventoryBalanceResource extends Resource
                     })
                     ->visible(fn (InventoryBalance $record): bool => $record->quantity > 0),
             ])
+            // Centang tetap ada saat search/filter berubah. Tautan "Pilih semua N
+            // data" dimatikan, karena tanpa filter-ulang ia bisa memilih seluruh tabel.
+            ->deselectAllRecordsWhenFiltered(false)
+            ->selectCurrentPageOnly()
             ->bulkActions([
                 \App\Filament\Support\MoveLocationActions::bulkAction(),
+                \App\Filament\Support\ChangeCategoryActions::bulkAction(),
             ]);
     }
 

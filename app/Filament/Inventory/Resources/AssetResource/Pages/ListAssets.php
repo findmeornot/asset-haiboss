@@ -14,6 +14,8 @@ use Illuminate\Support\HtmlString;
 
 class ListAssets extends ListRecords
 {
+    use \App\Filament\Support\Concerns\HasCampusLocationToolbar;
+
     protected static string $resource = AssetResource::class;
 
     public function getHeading(): string | \Illuminate\Contracts\Support\Htmlable

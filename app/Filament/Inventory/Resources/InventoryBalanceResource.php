@@ -182,7 +182,9 @@ class InventoryBalanceResource extends Resource
                     })
                     ->visible(fn (InventoryBalance $record): bool => $record->quantity > 0),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                \App\Filament\Support\MoveLocationActions::bulkAction(),
+            ]);
     }
 
     public static function getPages(): array

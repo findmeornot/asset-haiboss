@@ -132,10 +132,9 @@ class AssetScanner extends Page implements HasForms
                     ->maxSize(5120) // 5MB limit
                     ->directory('asset-photos')
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                    ->helperText('Dukungan format: JPG, PNG, WebP (Maks 5MB per file). Foto diambil langsung dari kamera.')
+                    ->helperText('Dukungan format: JPG, PNG, WebP (Maks 5MB per file). Ambil foto dari kamera atau pilih dari galeri.')
                     ->panelLayout('grid')
                     ->appendFiles()
-                    ->extraInputAttributes(['capture' => 'environment'])
             ])
             ->statePath('data');
     }

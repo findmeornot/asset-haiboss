@@ -9,6 +9,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Factory tombol "Cetak Checklist" (bulk-selection / massal-per-lokasi).
@@ -29,6 +30,8 @@ class PrintChecklistActions
     {
         return BulkAction::make('printChecklistBulk')
             ->label('Cetak Checklist')
+            ->hiddenLabel(fn () => Auth::user()?->hasRole('superadmin') || Auth::user()?->hasRole('Superadmin'))
+            ->tooltip(fn () => (Auth::user()?->hasRole('superadmin') || Auth::user()?->hasRole('Superadmin')) ? 'Cetak Checklist' : null)
             ->icon('heroicon-o-clipboard-document-check')
             ->color('gray')
             ->url(fn (Collection $records) => route('checklist.print', ['ids' => implode(',', static::resolveAssetIds($records))]))

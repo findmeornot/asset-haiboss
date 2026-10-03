@@ -66,8 +66,13 @@ class StockOpnameScanner extends Page
         $this->savedItem = null;
         $this->alreadyVerifiedItem = null;
 
+        $normalized = \App\Services\InventoryNumberGenerator::normalizeManualInput($inventoryNumber);
+
         $asset = Asset::withTrashed()
-            ->where(fn ($q) => $q->where('barcode', $inventoryNumber)->orWhere('inventory_number', $inventoryNumber))
+            ->where(fn ($q) => $q->where('barcode', $inventoryNumber)
+                                 ->orWhere('inventory_number', $inventoryNumber)
+                                 ->when($normalized, fn ($query) => $query->orWhere('inventory_number', $normalized))
+            )
             ->first();
 
         if ($asset) {

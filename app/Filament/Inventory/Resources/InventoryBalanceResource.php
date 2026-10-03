@@ -59,6 +59,18 @@ class InventoryBalanceResource extends Resource
                     ->toggleable()
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('unit')
+                    ->label('Satuan')
+                    ->toggleable()
+                    ->searchable(false)
+                    ->sortable(false)
+                    ->placeholder('-')
+                    ->getStateUsing(fn (InventoryBalance $record): ?string =>
+                        $record->purchaseItems()
+                            ->whereNotNull('unit')
+                            ->orderByDesc('id')
+                            ->value('unit')
+                    ),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Kategori')
                     ->toggleable()

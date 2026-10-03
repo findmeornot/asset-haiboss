@@ -64,6 +64,12 @@ class UnifiedItemResource extends Resource
                     ->toggleable()
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('unit_name')
+                    ->label('Satuan')
+                    ->toggleable()
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('category_name')
                     ->label('Kategori')
                     ->toggleable()
@@ -222,6 +228,8 @@ class UnifiedItemResource extends Resource
                 \App\Filament\Support\PrintChecklistActions::bulkAction(),
                 \App\Filament\Support\MoveLocationActions::bulkAction(),
                 \App\Filament\Support\ChangeCategoryActions::bulkAction(),
+                \App\Filament\Support\ChangeStatusActions::bulkAction(),
+                \App\Filament\Support\ChangeKondisiActions::bulkAction(),
             ]);
     }
 

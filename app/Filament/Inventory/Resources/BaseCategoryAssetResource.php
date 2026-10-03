@@ -72,6 +72,12 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->toggleable()
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('unit')
+                    ->label('Satuan')
+                    ->toggleable()
+                    ->searchable()
+                    ->sortable()
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Kategori')
                     ->toggleable()

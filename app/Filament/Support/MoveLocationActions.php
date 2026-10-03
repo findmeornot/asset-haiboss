@@ -29,6 +29,8 @@ class MoveLocationActions
     {
         return BulkAction::make('moveLocationBulk')
             ->label('Pindah Ruangan')
+            ->hiddenLabel(fn () => Auth::user()?->hasRole('superadmin') || Auth::user()?->hasRole('Superadmin'))
+            ->tooltip(fn () => (Auth::user()?->hasRole('superadmin') || Auth::user()?->hasRole('Superadmin')) ? 'Pindah Ruangan' : null)
             ->icon('heroicon-o-arrow-right-circle')
             ->color('warning')
             ->visible(fn () => Auth::user()?->hasRole('Superadmin') ?? false)

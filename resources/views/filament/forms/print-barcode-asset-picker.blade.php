@@ -8,6 +8,24 @@
     @if ($assets->isEmpty())
         <div class="text-sm text-danger-600">Tidak ada barang yang memiliki barcode pada ruangan ini.</div>
     @else
+        <div class="mb-3 flex items-center justify-end gap-3">
+            <button
+                type="button"
+                class="text-sm font-medium text-primary-600 hover:text-primary-500 focus:outline-none dark:text-primary-500 dark:hover:text-primary-400"
+                wire:click="$set('{{ $statePath }}', {{ json_encode($assets->pluck('id')->map(fn($id) => (string) $id)->all()) }})"
+            >
+                Pilih Semua
+            </button>
+            <span class="text-gray-300 dark:text-gray-600">|</span>
+            <button
+                type="button"
+                class="text-sm font-medium text-danger-600 hover:text-danger-500 focus:outline-none dark:text-danger-500 dark:hover:text-danger-400"
+                wire:click="$set('{{ $statePath }}', [])"
+            >
+                Hapus Pilihan
+            </button>
+        </div>
+
         <div
             class="rounded-xl ring-1 ring-gray-950/10 dark:ring-white/10"
             style="max-height: 55vh; overflow-y: auto; overflow-x: hidden;"

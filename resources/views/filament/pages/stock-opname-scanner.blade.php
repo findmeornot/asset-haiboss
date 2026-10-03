@@ -341,6 +341,9 @@
                             <x-filament::input type="text" id="usb-scanner-input" placeholder="Gunakan scanner barcode USB atau input manual..." />
                         </x-filament::input.wrapper>
                     </div>
+
+
+
                 </x-filament::section>
             </div>
 

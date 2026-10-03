@@ -230,7 +230,7 @@ class AssetResource extends Resource
                                 ->label('Tahun Perolehan')
                                 ->displayFormat('Y')
                                 ->format('Y-m-d')
-                                ->required()
+                                ->nullable()
                                 ->native(false),
 
                             Components\Select::make('ownership')
@@ -506,6 +506,11 @@ class AssetResource extends Resource
                     ->label('Merk/Tipe')
                     ->searchable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('unit')
+                    ->label('Satuan')
+                    ->searchable()
+                    ->toggleable()
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('serial_number')
                     ->label('No. Seri')
                     ->searchable()
@@ -747,9 +752,12 @@ class AssetResource extends Resource
                     \Filament\Actions\EditAction::make(),
                     \Filament\Actions\DeleteAction::make()
                         ->modalHeading('Hapus Aset (Soft Delete)')
-                        ->modalDescription('Aset akan dihapus dari daftar aktif, tetapi histori tetap tersimpan.'),
-                    \Filament\Actions\ForceDeleteAction::make(),
-                    \Filament\Actions\RestoreAction::make(),
+                        ->modalDescription('Aset akan dihapus dari daftar aktif, tetapi histori tetap tersimpan.')
+                        ->visible(fn () => Auth::user()->hasRole('superadmin')),
+                    \Filament\Actions\ForceDeleteAction::make()
+                        ->visible(fn () => Auth::user()->hasRole('superadmin')),
+                    \Filament\Actions\RestoreAction::make()
+                        ->visible(fn () => Auth::user()->hasRole('superadmin')),
                 ])
             ])
             // Centang tetap ada saat search/filter berubah. Tautan "Pilih semua N
@@ -758,14 +766,19 @@ class AssetResource extends Resource
             ->selectCurrentPageOnly()
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
-                    \Filament\Actions\ForceDeleteBulkAction::make(),
-                    \Filament\Actions\RestoreBulkAction::make(),
+                    \Filament\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->hasRole('superadmin')),
+                    \Filament\Actions\ForceDeleteBulkAction::make()
+                        ->visible(fn () => Auth::user()->hasRole('superadmin')),
+                    \Filament\Actions\RestoreBulkAction::make()
+                        ->visible(fn () => Auth::user()->hasRole('superadmin')),
                 ]),
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
                 \App\Filament\Support\PrintChecklistActions::bulkAction(),
                 \App\Filament\Support\MoveLocationActions::bulkAction(),
                 \App\Filament\Support\ChangeCategoryActions::bulkAction(),
+                \App\Filament\Support\ChangeStatusActions::bulkAction(),
+                \App\Filament\Support\ChangeKondisiActions::bulkAction(),
             ])
             ->emptyStateHeading('Belum ada Barang/Aset')
             ->emptyStateDescription('Mulai kelola inventaris Anda dengan menambahkan barang baru.');

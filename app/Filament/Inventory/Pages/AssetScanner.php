@@ -114,6 +114,11 @@ class AssetScanner extends Page implements HasForms
                     ])
                     ->createOptionUsing(fn (array $data) => \App\Models\Employee::create($data)->getKey()),
 
+                Components\Textarea::make('keterangan')
+                    ->label('Keterangan')
+                    ->rows(3)
+                    ->nullable(),
+
                 Components\FileUpload::make('asset_photos')
                     ->disk('s3')
                     ->label('Upload Foto (Maks 3)')
@@ -151,6 +156,7 @@ class AssetScanner extends Page implements HasForms
             'status' => $state['status'],
             'kondisi' => $state['kondisi'],
             'pic_id' => $state['pic_id'],
+            'keterangan' => $state['keterangan'] ?? null,
         ]);
 
         $existingPaths = $record->photos->pluck('file_path')->toArray();
@@ -181,8 +187,10 @@ class AssetScanner extends Page implements HasForms
             ->success()
             ->send();
 
-        // Refresh scanned asset relationships
-        $this->scannedAsset->refresh()->load('photos');
+        // Kosongkan form dan state aset agar kembali ke tampilan awal (siap scan baru)
+        $this->scannedAsset = null;
+        $this->scanError = null;
+        $this->form->fill([]);
     }
 
     public function handleScanResult($barcode)
@@ -192,9 +200,14 @@ class AssetScanner extends Page implements HasForms
             return;
         }
 
+        $normalized = \App\Services\InventoryNumberGenerator::normalizeManualInput($barcode);
+
         $asset = Asset::with(['category', 'location', 'pic', 'photos'])
             ->withTrashed()
-            ->where(fn ($q) => $q->where('barcode', $barcode)->orWhere('inventory_number', $barcode))
+            ->where(fn ($q) => $q->where('barcode', $barcode)
+                                 ->orWhere('inventory_number', $barcode)
+                                 ->when($normalized, fn ($query) => $query->orWhere('inventory_number', $normalized))
+            )
             ->first();
 
         if ($asset) {
@@ -220,6 +233,7 @@ class AssetScanner extends Page implements HasForms
                 'status' => $asset->status,
                 'kondisi' => $asset->kondisi,
                 'pic_id' => $asset->pic_id,
+                'keterangan' => $asset->keterangan,
                 'asset_photos' => $asset->photos->sortBy('sort_order')->pluck('file_path')->toArray(),
             ]);
 

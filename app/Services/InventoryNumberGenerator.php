@@ -10,6 +10,36 @@ class InventoryNumberGenerator
     private const PREFIX = 'INV';
 
     /**
+     * Normalize a manual (fallback) inventory input into the canonical INV-prefixed format.
+     *
+     * Accepts any of these forms typed by a user when the USB scanner is unavailable:
+     *   - Digits only:           "1945"    → "INV0001945"
+     *   - Digits with prefix:    "INV1945" → "INV0001945"
+     *   - Already canonical:     "INV0001945" → "INV0001945"
+     *
+     * Returns null when the input is empty or contains no numeric part.
+     * The returned value can be passed directly to Asset::where('inventory_number', ...) for
+     * an exact-match search — no LIKE, no partial matching.
+     */
+    public static function normalizeManualInput(string $input): ?string
+    {
+        $input = trim($input);
+        if ($input === '') {
+            return null;
+        }
+
+        // Strip the INV prefix (case-insensitive) if present, leaving only digits.
+        $digits = preg_replace('/^' . preg_quote(self::PREFIX, '/') . '/i', '', $input);
+
+        // After stripping the prefix, we expect a pure numeric string.
+        if (!ctype_digit($digits) || $digits === '') {
+            return null;
+        }
+
+        return sprintf('%s%07d', self::PREFIX, (int) $digits);
+    }
+
+    /**
      * Generate a unique inventory number for a new asset (e.g. INV0000001).
      * Now acts as a permanent unique Kode Barang, independent of category.
      */

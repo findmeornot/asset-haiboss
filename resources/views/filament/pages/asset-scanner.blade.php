@@ -260,6 +260,9 @@
                     </x-filament::input.wrapper>
                     <p class="text-[11px] text-gray-500 mt-1.5">Scanner USB akan mengisi barcode secara otomatis.</p>
                 </div>
+
+
+
             </div>
 
             <!-- PANEL KANAN: HASIL SCAN -->

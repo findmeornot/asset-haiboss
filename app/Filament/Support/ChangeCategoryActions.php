@@ -31,6 +31,8 @@ class ChangeCategoryActions
     {
         return BulkAction::make('changeCategoryBulk')
             ->label('Ganti Kategori')
+            ->hiddenLabel(fn () => Auth::user()?->hasRole('superadmin') || Auth::user()?->hasRole('Superadmin'))
+            ->tooltip(fn () => (Auth::user()?->hasRole('superadmin') || Auth::user()?->hasRole('Superadmin')) ? 'Ganti Kategori' : null)
             ->icon('heroicon-o-tag')
             ->color('warning')
             ->visible(fn () => Auth::user()?->hasRole('Superadmin') ?? false)

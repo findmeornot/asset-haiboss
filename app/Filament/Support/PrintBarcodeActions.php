@@ -94,6 +94,8 @@ class PrintBarcodeActions
     {
         return BulkAction::make('queuePrintLabelBulk')
             ->label('Cetak Barcode')
+            ->hiddenLabel(fn () => Auth::user()?->hasRole('superadmin') || Auth::user()?->hasRole('Superadmin'))
+            ->tooltip(fn () => (Auth::user()?->hasRole('superadmin') || Auth::user()?->hasRole('Superadmin')) ? 'Cetak Barcode' : null)
             ->icon('heroicon-o-printer')
             ->color('primary')
             ->visible(fn () => PrinterStation::exists())
@@ -248,6 +250,9 @@ class PrintBarcodeActions
      * $records isi Asset langsung, atau UnifiedItem (campuran row_type
      * 'asset'/'supply' -- 'supply' gak punya barcode per unit, dilewati).
      *
+     * Urutan yang dikembalikan sama dengan Cetak Checklist:
+     * nama barang (A→Z) lalu kode inventaris (A→Z) -- sesuai web.php baris 51.
+     *
      * @return Collection<int, Asset>
      */
     protected static function resolveAssets(Collection $records): Collection
@@ -257,11 +262,22 @@ class PrintBarcodeActions
         }
 
         if ($records->first() instanceof Asset) {
-            return $records;
+            // Collection datang dari tabel Filament -- urutan UI tidak dijamin sama
+            // dengan DB. Re-query dengan sorting yang sama seperti Cetak Checklist.
+            return Asset::whereIn('id', $records->pluck('id'))
+                ->whereNotNull('barcode')
+                ->orderBy('name')
+                ->orderBy('inventory_number')
+                ->get();
         }
 
+        // UnifiedItem: ambil hanya baris 'asset', query ulang agar bisa orderBy.
         $assetIds = $records->where('row_type', 'asset')->pluck('raw_id');
 
-        return Asset::whereIn('id', $assetIds)->whereNotNull('barcode')->get();
+        return Asset::whereIn('id', $assetIds)
+            ->whereNotNull('barcode')
+            ->orderBy('name')
+            ->orderBy('inventory_number')
+            ->get();
     }
 }

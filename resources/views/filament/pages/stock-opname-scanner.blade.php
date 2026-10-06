@@ -353,7 +353,7 @@
                 @if($scannedAsset)
                     <!-- E. HASIL SCAN / F. FORM VERIFIKASI FISIK -->
                     <x-filament::section class="fi-color-custom" style="border-color: rgba(var(--primary-500), 0.5); box-shadow: 0 0 0 1px rgba(var(--primary-500), 0.5);">
-                        <x-slot name="heading">Aset Ditemukan</x-slot>
+                        <x-slot name="heading">Barang Ditemukan</x-slot>
 
                         <div class="so-flex-col-gap">
                             <!-- Identitas Aset -->

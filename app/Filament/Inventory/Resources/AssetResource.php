@@ -775,6 +775,7 @@ class AssetResource extends Resource
                 ]),
                 \App\Filament\Support\PrintBarcodeActions::bulkAction(),
                 \App\Filament\Support\PrintChecklistActions::bulkAction(),
+                \App\Filament\Support\AddPhotoActions::bulkAction(),
                 \App\Filament\Support\MoveLocationActions::bulkAction(),
                 \App\Filament\Support\ChangeCategoryActions::bulkAction(),
                 \App\Filament\Support\ChangeStatusActions::bulkAction(),

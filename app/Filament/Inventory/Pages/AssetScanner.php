@@ -135,6 +135,9 @@ class AssetScanner extends Page implements HasForms
                     ->helperText('Dukungan format: JPG, PNG, WebP (Maks 5MB per file). Ambil foto dari kamera atau pilih dari galeri.')
                     ->panelLayout('grid')
                     ->appendFiles()
+                    // Tanpa atribut 'capture', browser mobile akan menampilkan
+                    // menu pilihan: "Ambil Foto" (kamera) ATAU "Pilih dari Galeri"
+                    ->extraInputAttributes(['accept' => 'image/*'])
             ])
             ->statePath('data');
     }

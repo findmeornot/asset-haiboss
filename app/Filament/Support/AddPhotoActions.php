@@ -74,6 +74,9 @@ class AddPhotoActions
                         ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                         ->helperText('Pilih 1–3 foto. Format: JPG, PNG, WebP. Maks 5MB per file.')
                         ->panelLayout('grid')
+                        // Tanpa atribut 'capture', browser mobile akan menampilkan
+                        // menu pilihan: "Ambil Foto" (kamera) ATAU "Pilih dari Galeri"
+                        ->extraInputAttributes(['accept' => 'image/*'])
                         ->required(),
 
                     Toggle::make('allow_overwrite')

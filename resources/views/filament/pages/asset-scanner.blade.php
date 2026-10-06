@@ -313,9 +313,71 @@
 
                         <!-- EDIT DETAIL & UPLOAD FOTO SECTION -->
                         <form wire:submit="saveDetails" class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-                            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Edit Detail & Foto Fisik</h3>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4">Edit Detail &amp; Foto Fisik</h3>
 
                             {{ $this->form }}
+
+                            {{-- Tombol kamera khusus Android 13+ (iQOO, Vivo, dll.)
+                                 Android 13+ pakai Photo Picker baru yang hanya buka galeri.
+                                 Solusi: hidden input dgn capture="environment" lalu inject ke Filepond --}}
+                            <div
+                                x-data="{
+                                    openCamera() {
+                                        document.getElementById('camera-capture-input').click();
+                                    },
+                                    handleCapture(event) {
+                                        const files = event.target.files;
+                                        if (!files || files.length === 0) return;
+
+                                        // Cari Filepond instance yang dirender Filament FileUpload
+                                        const pondEl = document.querySelector('.fi-fo-file-upload .filepond--root');
+                                        if (!pondEl) {
+                                            alert('Upload component belum siap, coba lagi.');
+                                            return;
+                                        }
+                                        const pond = FilePond.find(pondEl);
+                                        if (!pond) {
+                                            alert('Upload component tidak ditemukan.');
+                                            return;
+                                        }
+
+                                        // Inject file dari kamera ke Filepond
+                                        Array.from(files).forEach(file => pond.addFile(file));
+
+                                        // Reset agar bisa ambil foto lagi
+                                        event.target.value = '';
+                                    }
+                                }"
+                                class="mt-3 mb-1"
+                            >
+                                {{-- Hidden input: capture="environment" = langsung buka kamera belakang --}}
+                                <input
+                                    id="camera-capture-input"
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    multiple
+                                    class="sr-only"
+                                    @change="handleCapture($event)"
+                                >
+
+                                <button
+                                    type="button"
+                                    @click="openCamera()"
+                                    class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-dashed border-primary-400 dark:border-primary-500 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors text-sm font-semibold"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    Ambil Foto dari Kamera
+                                </button>
+                                <p class="text-[11px] text-center text-gray-400 dark:text-gray-500 mt-1.5">
+                                    Atau gunakan tombol upload di atas untuk memilih dari galeri
+                                </p>
+                            </div>
 
                             <div class="mt-4 flex gap-3">
                                 <x-filament::button
@@ -329,6 +391,7 @@
                                 </x-filament::button>
                             </div>
                         </form>
+
 
                         <!-- TOMBOL AKSI UTAMA -->
                         <x-filament::button

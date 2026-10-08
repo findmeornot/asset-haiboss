@@ -54,3 +54,25 @@ Route::get('/checklist/print', function (Request $request) {
 
     return view('checklist-print', ['assets' => $assets]);
 })->name('checklist.print')->middleware('auth');
+
+Route::get('/asset-photo-thumb/{path}', function (string $path) {
+    $disk = \Illuminate\Support\Facades\Storage::disk(config('filesystems.default', 's3'));
+    if (!$disk->exists($path)) {
+        abort(404);
+    }
+    
+    $cacheKey = 'thumb_' . md5($path);
+    $imgData = \Illuminate\Support\Facades\Cache::rememberForever($cacheKey, function () use ($disk, $path) {
+        try {
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            $image = $manager->read($disk->get($path));
+            return $image->scale(down: true, width: 400)->toJpeg(75)->toString();
+        } catch (\Exception $e) {
+            return $disk->get($path);
+        }
+    });
+
+    return response($imgData, 200)
+        ->header('Content-Type', 'image/jpeg')
+        ->header('Cache-Control', 'public, max-age=31536000');
+})->where('path', '.*')->name('asset.photo.thumb');

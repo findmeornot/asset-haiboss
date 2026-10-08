@@ -48,6 +48,15 @@ abstract class BaseCategoryAssetResource extends Resource
         return false;
     }
 
+    /**
+     * URL halaman edit untuk baris di tabel.
+     * Override di subclass jika memiliki halaman edit sendiri.
+     */
+    public static function getEditUrl(Asset $record): string
+    {
+        return AssetResource::getUrl('edit', ['record' => $record]);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return AssetResource::form($schema);
@@ -150,7 +159,7 @@ abstract class BaseCategoryAssetResource extends Resource
                 Tables\Columns\TextColumn::make('purchaseItem.unit_price')
                     ->label('Harga Perolehan (per unit)')
                     ->toggleable()
-                    ->money('idr')
+                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format((float) $state, 0, ',', '.') : null)
                     ->visible(fn () => Auth::user()->hasPermissionTo('financial.view'))
                     ->sortable()
                     ->getStateUsing(function ($record): ?string {
@@ -237,7 +246,7 @@ abstract class BaseCategoryAssetResource extends Resource
                     ->label('Edit')
                     ->hiddenLabel()
                     ->icon('heroicon-o-pencil-square')
-                    ->url(fn ($record) => AssetResource::getUrl('edit', ['record' => $record]))
+                    ->url(fn ($record) => static::getEditUrl($record))
                     ->visible(fn ($record) => Auth::user()->can('update', $record)),
                 \App\Filament\Support\PrintBarcodeActions::viewAction()->hiddenLabel(),
                 \App\Filament\Support\PrintBarcodeActions::rowAction(),

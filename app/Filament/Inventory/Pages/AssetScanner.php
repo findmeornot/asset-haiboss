@@ -120,7 +120,7 @@ class AssetScanner extends Page implements HasForms
                     ->nullable(),
 
                 Components\FileUpload::make('asset_photos')
-                    ->disk('s3')
+                    ->disk('s3_thumb')
                     ->label('Upload Foto (Maks 3)')
                     ->multiple()
                     ->maxFiles(3)

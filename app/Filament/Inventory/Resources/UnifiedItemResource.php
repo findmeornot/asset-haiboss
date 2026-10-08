@@ -91,8 +91,7 @@ class UnifiedItemResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
                     ->label('Harga Perolehan')
-                    ->toggleable()
-                    ->money('idr')
+                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format((float) $state, 0, ',', '.') : null)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')

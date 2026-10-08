@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 
 #[ObservedBy(\App\Observers\AssetObserver::class)]
 class Asset extends Model {
-    use HasRouteUlid, SoftDeletes, HasFactory;
+    use HasRouteUlid, SoftDeletes, HasFactory, \App\Traits\InvalidatesUnifiedItemCache;
     protected $guarded = [];
 
     protected function casts(): array

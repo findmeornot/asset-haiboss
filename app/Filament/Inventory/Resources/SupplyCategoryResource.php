@@ -3,6 +3,7 @@
 namespace App\Filament\Inventory\Resources;
 
 use App\Filament\Inventory\Resources\SupplyCategoryResource\Pages;
+use App\Models\Asset;
 
 /**
  * Menampilkan daftar barang berkategori "Barang Habis Pakai" (type = supply).
@@ -34,11 +35,21 @@ class SupplyCategoryResource extends BaseCategoryAssetResource
         return 'Barang Habis Pakai';
     }
 
+    /**
+     * Override: Edit BHP menggunakan halaman khusus EditSupplyCategory,
+     * bukan AssetResource::edit yang umum (yang tidak mendukung BHP legacy).
+     */
+    public static function getEditUrl(Asset $record): string
+    {
+        return static::getUrl('edit', ['record' => $record]);
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListSupplyCategory::route('/'),
             'view'  => Pages\ViewSupplyCategory::route('/{record}'),
+            'edit'  => Pages\EditSupplyCategory::route('/{record}/edit'),
         ];
     }
 }

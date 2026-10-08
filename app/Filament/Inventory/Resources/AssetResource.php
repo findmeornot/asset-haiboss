@@ -361,7 +361,7 @@ class AssetResource extends Resource
 
                         \Filament\Schemas\Components\Group::make()->schema([
                             Components\FileUpload::make('asset_photos')
-                                ->disk('s3')
+                                ->disk('s3_thumb')
                                 ->label('Foto Barang')
                                 ->multiple()
                                 ->maxFiles(3)
@@ -567,7 +567,7 @@ class AssetResource extends Resource
                 Tables\Columns\TextColumn::make('purchaseItem.unit_price')
                     ->label('Harga Perolehan')
                     ->toggleable()
-                    ->money('idr')
+                    ->formatStateUsing(fn ($state) => $state ? 'Rp ' . number_format((float) $state, 0, ',', '.') : null)
                     ->sortable()
                     ->getStateUsing(function ($record): ?string {
                         // New architecture: use unit_price from PurchaseItem

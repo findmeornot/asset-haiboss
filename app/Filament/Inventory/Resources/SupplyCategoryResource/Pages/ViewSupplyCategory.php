@@ -3,7 +3,6 @@
 namespace App\Filament\Inventory\Resources\SupplyCategoryResource\Pages;
 
 use App\Filament\Inventory\Resources\SupplyCategoryResource;
-use App\Filament\Inventory\Resources\AssetResource;
 use App\Models\Asset;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
@@ -19,7 +18,7 @@ class ViewSupplyCategory extends ViewRecord
             Actions\Action::make('editFull')
                 ->label('Edit Barang')
                 ->icon('heroicon-o-pencil-square')
-                ->url(fn () => AssetResource::getUrl('edit', ['record' => $this->record]))
+                ->url(fn () => SupplyCategoryResource::getUrl('edit', ['record' => $this->record]))
                 ->visible(fn () => Auth::user()->can('update', $this->record)),
         ];
     }

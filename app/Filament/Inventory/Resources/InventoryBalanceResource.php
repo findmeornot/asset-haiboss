@@ -3,6 +3,7 @@
 namespace App\Filament\Inventory\Resources;
 
 use App\Filament\Inventory\Resources\InventoryBalanceResource\Pages;
+use App\Filament\Inventory\Resources\SupplyCategoryResource;
 use App\Models\InventoryBalance;
 use App\Models\AuditLog;
 use App\Enums\AuditAction;
@@ -49,6 +50,14 @@ class InventoryBalanceResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('photo')
+                    ->label('Foto')
+                    ->disk('s3')
+                    ->height(48)
+                    ->width(48)
+                    ->defaultImageUrl(null)
+                    ->extraImgAttributes(['class' => 'rounded-md object-cover'])
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama Barang')
                     ->toggleable()
@@ -59,18 +68,12 @@ class InventoryBalanceResource extends Resource
                     ->toggleable()
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('unit')
+                Tables\Columns\TextColumn::make('last_unit')
                     ->label('Satuan')
                     ->toggleable()
                     ->searchable(false)
                     ->sortable(false)
-                    ->placeholder('-')
-                    ->getStateUsing(fn (InventoryBalance $record): ?string =>
-                        $record->purchaseItems()
-                            ->whereNotNull('unit')
-                            ->orderByDesc('id')
-                            ->value('unit')
-                    ),
+                    ->placeholder('-'),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Kategori')
                     ->toggleable()
@@ -103,6 +106,79 @@ class InventoryBalanceResource extends Resource
                 //
             ])
             ->actions([
+                \Filament\Actions\Action::make('edit_info')
+                    ->label('Edit')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('gray')
+                    ->modalHeading(fn (InventoryBalance $record) => 'Edit: ' . $record->name)
+                    ->fillForm(fn (InventoryBalance $record): array => [
+                        'name'        => $record->name,
+                        'brand'       => $record->brand,
+                        'location_id' => $record->location_id,
+                        'campus_id'   => $record->campus_id,
+                        'pic_id'      => $record->pic_id,
+                        'photo'       => $record->photo,
+                    ])
+                    ->form([
+                        Forms\Components\TextInput::make('name')
+                            ->label('Nama Barang')
+                            ->required()
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('brand')
+                            ->label('Merk / Tipe')
+                            ->maxLength(255),
+                        Forms\Components\Select::make('campus_id')
+                            ->label('Gedung / Kampus')
+                            ->relationship('campus', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->afterStateUpdated(fn ($set) => $set('location_id', null)),
+                        Forms\Components\Select::make('location_id')
+                            ->label('Ruangan / Lokasi')
+                            ->relationship('location', 'name')
+                            ->searchable()
+                            ->preload(),
+                        Forms\Components\Select::make('pic_id')
+                            ->label('PIC (Penanggungjawab)')
+                            ->relationship('pic', 'name')
+                            ->searchable()
+                            ->preload(),
+                        Forms\Components\FileUpload::make('photo')
+                            ->label('Foto Barang')
+                            ->image()
+                            ->disk('s3')
+                            ->directory('inventory-photos')
+                            ->imageEditor()
+                            ->imageResizeMode('contain')
+                            ->imageResizeTargetWidth('1200')
+                            ->imageResizeTargetHeight('1200')
+                            ->maxSize(5120)
+                            ->panelLayout('integrated')
+                            ->helperText('Satu foto representatif untuk jenis barang ini (maks 5MB).')
+                            ->columnSpanFull(),
+                    ])
+                    ->action(function (InventoryBalance $record, array $data): void {
+                        $photoState = $data['photo'] ?? [];
+                        // FileUpload multiple=false tapi fillForm pakai array, normalize:
+                        $newPhoto = is_array($photoState) ? (reset($photoState) ?: null) : ($photoState ?: null);
+
+                        // Hapus foto lama dari S3 jika diganti
+                        if ($record->photo && $newPhoto !== $record->photo) {
+                            \Illuminate\Support\Facades\Storage::disk('s3')->delete($record->photo);
+                        }
+
+                        $record->update(array_merge(
+                            \Illuminate\Support\Arr::except($data, ['photo']),
+                            ['photo' => $newPhoto],
+                        ));
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Berhasil diperbarui')
+                            ->success()
+                            ->send();
+                    }),
+
                 \Filament\Actions\Action::make('stock_out')
                     ->label('Gunakan Stok')
                     ->icon('heroicon-o-minus-circle')
@@ -201,6 +277,18 @@ class InventoryBalanceResource extends Resource
             ->bulkActions([
                 \App\Filament\Support\MoveLocationActions::bulkAction(),
                 \App\Filament\Support\ChangeCategoryActions::bulkAction(),
+            ]);
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()
+            ->addSelect([
+                'last_unit' => \App\Models\PurchaseItem::select('unit')
+                    ->whereColumn('inventory_balance_id', 'inventory_balances.id')
+                    ->whereNotNull('unit')
+                    ->orderByDesc('id')
+                    ->limit(1)
             ]);
     }
 

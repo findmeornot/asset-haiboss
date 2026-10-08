@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventoryBalance extends Model
 {
+    use \App\Traits\InvalidatesUnifiedItemCache;
     protected $guarded = ['id'];
 
     public function category(): BelongsTo

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseItem extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, \App\Traits\InvalidatesUnifiedItemCache;
 
     public const CAPITALIZATION_THRESHOLD = 1000000;
 

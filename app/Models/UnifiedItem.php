@@ -20,6 +20,11 @@ class UnifiedItem extends Model
     public function location() { return $this->belongsTo(\App\Models\Location::class, 'location_id'); }
     public function pic() { return $this->belongsTo(\App\Models\Employee::class, 'pic_id'); }
 
+    public function newEloquentBuilder($query)
+    {
+        return new \App\Builders\UnifiedItemBuilder($query);
+    }
+
     protected static function booted()
     {
         static::addGlobalScope('unified', function (Builder $builder) {

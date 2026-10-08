@@ -137,33 +137,25 @@ class MutationResource extends Resource
                                 Components\Select::make('asset_ids')
                                     ->label('Pilih Aset (Bisa Pilih Banyak)')
                                     ->multiple()
-                                    ->optionsLimit(500)
-                                    ->options(function (callable $get, ?Mutation $record) {
-                                        $type = $get('type');
-                                        if (!in_array($type, ['asset', 'inventory'])) return [];
-                                        
-                                        // HISTORICAL HYDRATION: If mutation is no longer pending, 
-                                        // always fetch the specifically attached assets, ignoring their current location.
-                                        if ($record && in_array($record->status, ['approved', 'completed', 'rejected'])) {
-                                            $assetIds = $record->items()->whereNotNull('asset_id')->pluck('asset_id')->toArray();
-                                            return Asset::whereIn('id', $assetIds)->get()->mapWithKeys(function ($asset) {
-                                                $brand = $asset->brand ? ' - ' . $asset->brand : '';
-                                                $label = $asset->name . $brand . ' (' . ($asset->barcode ?? $asset->inventory_number ?? 'No Barcode') . ')';
-                                                return [$asset->id => $label];
-                                            })->toArray();
-                                        }
-                                        
+                                    ->getSearchResultsUsing(function (string $search, callable $get) {
                                         $campusId = $get('source_campus_id');
                                         $locationId = $get('source_location_id');
-                                        
                                         if (!$campusId || !$locationId) return [];
                                         
+                                        $type = $get('type');
+                                        if (!in_array($type, ['asset', 'inventory'])) return [];
                                         $slug = ($type === 'asset') ? 'aset' : 'inventaris';
                                         
                                         return Asset::where('campus_id', $campusId)
                                             ->where('location_id', $locationId)
                                             ->whereHas('classification', fn($q) => $q->where('slug', $slug))
                                             ->whereIn('status', \App\Services\MutationValidationService::ELIGIBLE_STATUSES)
+                                            ->where(function($q) use ($search) {
+                                                $q->where('name', 'like', "%{$search}%")
+                                                  ->orWhere('barcode', 'like', "%{$search}%")
+                                                  ->orWhere('inventory_number', 'like', "%{$search}%");
+                                            })
+                                            ->limit(50)
                                             ->get()
                                             ->mapWithKeys(function ($asset) {
                                                 $brand = $asset->brand ? ' - ' . $asset->brand : '';
@@ -171,37 +163,25 @@ class MutationResource extends Resource
                                                 return [$asset->id => $label];
                                             })->toArray();
                                     })
+                                    ->getOptionLabelsUsing(function (array $values) {
+                                        return Asset::whereIn('id', $values)->get()->mapWithKeys(function ($asset) {
+                                            $brand = $asset->brand ? ' - ' . $asset->brand : '';
+                                            $label = $asset->name . $brand . ' (' . ($asset->barcode ?? $asset->inventory_number ?? 'No Barcode') . ')';
+                                            return [$asset->id => $label];
+                                        })->toArray();
+                                    })
                                     ->searchable()
-                                    ->preload()
                                     ->required(fn (callable $get) => in_array($get('type'), ['asset', 'inventory']))
                                     ->visible(fn (callable $get) => in_array($get('type'), ['asset', 'inventory']))
                                     ->disabled(fn (callable $get) => blank($get('source_location_id')))
                                     ->dehydrated(false)
-                                    ->reactive()
                                     ->afterStateHydrated(function (Components\Select $component, ?Mutation $record) {
                                         if ($record && in_array($record->type, ['asset', 'inventory'])) {
                                             $component->state($record->items()->whereNotNull('asset_id')->pluck('asset_id')->toArray());
                                         }
                                     }),
 
-                                Components\Placeholder::make('selected_assets_list')
-                                    ->label('Rincian Aset Terpilih')
-                                    ->visible(fn (callable $get) => in_array($get('type'), ['asset', 'inventory']) && !empty($get('asset_ids')))
-                                    ->content(function (callable $get) {
-                                        $ids = $get('asset_ids');
-                                        if (empty($ids)) return '-';
-                                        
-                                        $assets = Asset::whereIn('id', $ids)->get();
-                                        $html = '<div style="background: rgba(128,128,128,0.05); padding: 10px; border-radius: 8px;">';
-                                        $html .= '<ul style="list-style-type: decimal; margin-left: 20px; gap: 4px; display: flex; flex-direction: column;">';
-                                        foreach ($assets as $asset) {
-                                            $brand = $asset->brand ? ' - ' . $asset->brand : '';
-                                            $label = $asset->name . $brand . ' (' . ($asset->barcode ?? $asset->inventory_number ?? 'No Barcode') . ')';
-                                            $html .= '<li>' . $label . '</li>';
-                                        }
-                                        $html .= '</ul></div>';
-                                        return new \Illuminate\Support\HtmlString($html);
-                                    }),
+
 
                                 Components\Repeater::make('items')
                                     ->relationship()

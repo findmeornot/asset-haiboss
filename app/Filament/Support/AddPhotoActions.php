@@ -14,10 +14,14 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Bulk action "Tambah Foto Barang" -- menambahkan satu foto ke beberapa
- * aset sekaligus. Foto existing TIDAK dihapus (append-only) kecuali
+ * barang sekaligus. Foto existing TIDAK dihapus (append-only) kecuali
  * barang sudah punya 3 foto (maxFiles) dan user mencentang opsi timpa.
  *
- * Hanya memproses baris bertipe Asset (bukan BHP/Persediaan).
+ * Mendukung semua record bertipe Asset: Aset, Inventaris, maupun
+ * Barang Habis Pakai (BHP) yang dikelola via SupplyCategoryResource.
+ * Di konteks UnifiedItem, hanya row_type='asset' yang diproses karena
+ * row_type='supply' mewakili InventoryBalance (master stok), bukan
+ * Asset individual yang memiliki relasi foto.
  * Penyimpanan menggunakan mekanisme yang sama dengan AssetScanner
  * dan AssetResource (disk S3, tabel asset_photos).
  */
@@ -41,7 +45,7 @@ class AddPhotoActions
                     return [
                         Placeholder::make('no_assets')
                             ->hiddenLabel()
-                            ->content('Tidak ada Aset (non-BHP) yang dipilih. Aksi ini hanya berlaku untuk Aset.'),
+                            ->content('Tidak ada barang yang dapat difoto. Aksi ini berlaku untuk Aset, Inventaris, dan Barang Habis Pakai yang tercatat sebagai item individual.'),
                     ];
                 }
 
@@ -69,7 +73,7 @@ class AddPhotoActions
                         ->imageResizeTargetWidth('2000')
                         ->imageResizeTargetHeight('2000')
                         ->maxSize(5120)
-                        ->disk('s3')
+                        ->disk('s3_thumb')
                         ->directory('asset-photos')
                         ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                         ->helperText('Pilih 1–3 foto. Format: JPG, PNG, WebP. Maks 5MB per file.')
@@ -168,11 +172,13 @@ class AddPhotoActions
         }
 
         if ($records->first() instanceof Asset) {
-            return $records->load('photos');
+            // $records dari Filament bulk action adalah plain Collection (bukan Eloquent Collection),
+            // sehingga ->load() tidak tersedia. Gunakan query Eloquent untuk eager load relasi.
+            return Asset::whereIn('id', $records->pluck('id'))->with('photos')->get();
         }
 
         if ($records->first() instanceof InventoryBalance) {
-            return collect(); // BHP tidak punya foto per unit
+            return collect(); // InventoryBalance adalah master stok BHP, bukan item individual – tidak punya relasi foto
         }
 
         // UnifiedItem
